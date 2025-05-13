@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<section class="content">
+  <div class="container-fluid">
+    <div class="row">
+
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+          <div class="inner">
+            <h3>{{ total_users }}</h3>
+            <p>Total Users</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-users"></i>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Map Section -->
+    <div class="row mt-4">
+      <div class="col-12">
+        <div id="map" style="height: 500px;"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- JS to load map -->
+<script>
+const comuneName = "torino"; // change this dynamically later
+
+fetch(`/api/map_data/${comuneName}`)
+  .then(response => response.json())
+  .then(data => {
+    const map = L.map('map').setView([41.9028, 12.4964], 6); // Center on Italy
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    L.geoJSON(data).addTo(map);
+  });
+</script>
+
+{% endblock %}
