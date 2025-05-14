@@ -1,33 +1,10 @@
-# === functions.py (CLEANED) ===
 import pandas as pd
 import os
 import json
 from shapely import wkt
+from utils.db_utils import fetch_query
 
-# === Paths and Configuration ===
-DATA_PATH = "data/"
-
-# File mappings
-consumption_files = {
-    "residential": "co_dom_com_o_table.csv",
-    "industrial": "co_pri_com_o_table.csv",
-    "agricultural": "co_sec_com_o_table.csv",
-    "commercial": "co_ter_com_o_table.csv"
-}
-
-actual_files = {
-    "solar": "ap_sol_com_o_table.csv",
-    "wind": "ap_eol_com_o_table.csv",
-    "hydroelectric": "ap_idr_com_o_table.csv",
-    "geothermal": "ap_geo_com_o_table.csv",
-    "biomass": "ap_bio_com_o_table.csv"
-}
-
-future_files = {
-    "solar": "fp_bio_com_o_table.csv",
-    "wind_v52": "fp_eol_v52_com_o_table.csv",
-    "wind_v80": "fp_eol_v80_com_o_table.csv"
-}
+# === Mapping & Constants ===
 
 month_map = {
     "gen": "Jan", "feb": "Feb", "mar": "Mar", "apr": "Apr", "mag": "May",
@@ -41,53 +18,82 @@ season_months = {
     'autumn': ['set', 'ott', 'nov']
 }
 
-# === Helper Functions ===
-def safe_read_csv(filename):
-    """Safely reads a CSV file from the data folder."""
-    try:
-        df = pd.read_csv(os.path.join(DATA_PATH, filename))
-        df.columns = df.columns.str.lower().str.strip()
-        if 'comune' in df.columns:
-            df['comune'] = df['comune'].str.lower().str.strip()
-        return df
-    except Exception as e:
-        print(f"Error loading {filename}: {e}")
-        return pd.DataFrame()
+# === Generic Data Query by Table ===
 
-def get_unique_comuni(df):
-    """Returns a sorted list of unique comuni from a DataFrame."""
-    if "comune" in df.columns:
-        return sorted(df['comune'].dropna().unique())
-    return []
+def get_data_by_comune(table_name, comune_code):
+    query = f"SELECT * FROM {table_name} WHERE comune_code = %s"
+    rows = fetch_query(query, (comune_code,))
+    return pd.DataFrame(rows)
 
-def filter_data(df, comune=None):
-    """Filters the DataFrame by comune."""
-    if comune and "comune" in df.columns:
-        df["comune"] = df["comune"].str.strip().str.lower()
-        df = df[df["comune"] == comune.strip().lower()]
-    return df
+# === Named Helper Functions for Specific Tables ===
 
-# === GeoJSON Helper ===
+# Consumption
+def get_residential_consumption(comune_code):
+    return get_data_by_comune("co_dom_com_o_table", comune_code)
+
+def get_industrial_consumption(comune_code):
+    return get_data_by_comune("co_pri_com_o_table", comune_code)
+
+def get_agricultural_consumption(comune_code):
+    return get_data_by_comune("co_sec_com_o_table", comune_code)
+
+def get_commercial_consumption(comune_code):
+    return get_data_by_comune("co_ter_com_o_table", comune_code)
+
+# Actual Production
+def get_solar_production(comune_code):
+    return get_data_by_comune("ap_sol_com_o_table", comune_code)
+
+def get_wind_production(comune_code):
+    return get_data_by_comune("ap_eol_com_o_table", comune_code)
+
+def get_hydro_production(comune_code):
+    return get_data_by_comune("ap_idr_com_o_table", comune_code)
+
+def get_geo_production(comune_code):
+    return get_data_by_comune("ap_geo_com_o_table", comune_code)
+
+def get_bio_production(comune_code):
+    return get_data_by_comune("ap_bio_com_o_table", comune_code)
+
+# Future Production
+def get_future_bio(comune_code):
+    return get_data_by_comune("fp_bio_com_o_table", comune_code)
+
+def get_future_wind_v52(comune_code):
+    return get_data_by_comune("fp_eol_v52_com_o_table", comune_code)
+
+def get_future_wind_v80(comune_code):
+    return get_data_by_comune("fp_eol_v80_com_o_table", comune_code)
+
+# Scenario Table
+def get_scenario_options(comune_code):
+    return get_data_by_comune("scenario_five_op_table", comune_code)
+
+# === Geometry & Comuni ===
+
 def get_geojson_for_comune(comune_name):
-    """Returns GeoJSON feature collection for a given comune."""
-    df = safe_read_csv("Italy_commune_wkt.csv")
-    df = df[df['comune'] == comune_name.lower()]
-    if df.empty:
+    query = "SELECT wkt, comune_name FROM commune_geometry WHERE LOWER(comune_name) = LOWER(%s)"
+    rows = fetch_query(query, (comune_name,))
+    if not rows:
         return None
 
-    feature_list = []
-    for _, row in df.iterrows():
-        geometry = wkt.loads(row['geometry'])
+    features = []
+    for row in rows:
+        geometry = wkt.loads(row["wkt"])
         feature = {
             "type": "Feature",
             "geometry": json.loads(json.dumps(geometry.__geo_interface__)),
-            "properties": {
-                "comune": row['comune']
-            }
+            "properties": {"comune": row["comune_name"]}
         }
-        feature_list.append(feature)
+        features.append(feature)
 
     return {
         "type": "FeatureCollection",
-        "features": feature_list
+        "features": features
     }
+
+def get_unique_comuni_from_db():
+    query = "SELECT DISTINCT comune_name FROM commune_geometry ORDER BY comune_name"
+    rows = fetch_query(query)
+    return [row["comune_name"] for row in rows]
