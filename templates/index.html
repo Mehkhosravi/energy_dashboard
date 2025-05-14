@@ -1,75 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Energy Dashboard</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
-<body>
+{% extends "base.html" %}
 
-  <!-- Map -->
-  <div id="map" style="height: 400px;"></div>
+{% block title %}Home{% endblock %}
 
-  <!-- Comune Selection -->
-  <div>
-    <label for="comuneSelect">Select Comune:</label>
-    <select id="comuneSelect">
-      <option value="Rome">Rome</option>
-      <option value="Milan">Milan</option>
-      <!-- You can populate dynamically -->
-    </select>
-  </div>
+{% block content %}
+  <h1 class="text-2xl font-bold">Welcome to the Energy Platform</h1>
+  <!-- Hero Section -->
+  <section class="py-24">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+      <!-- Left Side: Large Words -->
+      <div class="space-y-16">
+          <h1 class="text-7xl font-extrabold leading-tight">Build</h1>
+          <h1 class="text-7xl font-extrabold leading-tight">Connect</h1>
+          <h1 class="text-7xl font-extrabold leading-tight">Transform</h1>
+      </div>
 
-  <!-- Sector Distribution Sliders -->
-  <div>
-    <label>Residential</label>
-    <input type="range" class="sector" data-sector="Residential" min="0" max="100" value="25">
-    <label>Commercial</label>
-    <input type="range" class="sector" data-sector="Commercial" min="0" max="100" value="25">
-    <!-- Add more sectors as needed -->
-  </div>
-
-  <!-- Checkboxes for Energy Sources -->
-  <div class="checkboxes">
-    <div class="section">
-      <h3>Actual Sources</h3>
-      <input type="checkbox" value="solar"> Solar
-      <input type="checkbox" value="wind"> Wind
+      <!-- Right Side: Matching Images -->
+      <div class="space-y-16">
+          <img src="https://source.unsplash.com/600x300/?city,solar" class="rounded-2xl w-full object-cover h-40 shadow-md" />
+          <img src="https://source.unsplash.com/600x300/?airplane,sky" class="rounded-2xl w-full object-cover h-40 shadow-md" />
+          <img src="https://source.unsplash.com/600x300/?ship,port" class="rounded-2xl w-full object-cover h-40 shadow-md" />
+      </div>
     </div>
-    <div class="section">
-      <h3>Future Sources</h3>
-      <input type="checkbox" value="fusion"> Fusion
-    </div>
-  </div>
-
-  <!-- Charts -->
-  <canvas id="monthlyChart" width="400" height="200"></canvas>
-  <canvas id="seasonalChart" width="400" height="200"></canvas>
-  <canvas id="selfSufficiencyChart" width="400" height="200"></canvas>
-  <canvas id="selfConsumptionChart" width="400" height="200"></canvas>
-
-  <!-- Loading Spinner -->
-  <div id="loading" style="display:none;">Loading...</div>
-
-  <!-- Scripts (placed LAST) -->
-  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="{{ url_for('static', filename='scripts/main.js') }}"></script>
-
-</body>
-</html>  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  </section>
+{% endblock %}

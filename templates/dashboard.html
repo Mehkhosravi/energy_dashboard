@@ -1,49 +1,69 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard{% endblock %}
+{% block title %}Energy Dashboard{% endblock %}
 
 {% block content %}
-<section class="content">
-  <div class="container-fluid">
-    <div class="row">
+<section class="py-10">
+  <h1 class="text-3xl font-bold mb-6 text-center">Energy Dashboard</h1>
 
-      <div class="col-lg-3 col-6">
-        <div class="small-box bg-info">
-          <div class="inner">
-            <h3>{{ total_users }}</h3>
-            <p>Total Users</p>
-          </div>
-          <div class="icon">
-            <i class="fas fa-users"></i>
-          </div>
-        </div>
-      </div>
+  <!-- Region/Province/Municipality Selector -->
+  <div class="bg-white rounded-xl shadow-md p-6 mb-8 max-w-4xl mx-auto">
+    <label for="locationSelect" class="block mb-2 text-sm font-medium text-gray-700">Select an Area:</label>
+    <select id="locationSelect" name="location" class="w-full p-3 rounded-lg border border-gray-300">
+      <option value="">-- Choose a Region, Province, or Municipality --</option>
+      <option value="region">Region</option>
+      <option value="province">Province</option>
+      <option value="municipality">Municipality</option>
+    </select>
+  </div>
 
+  <!-- Map Display -->
+  <div class="w-full h-96 mb-10 rounded-xl overflow-hidden shadow-lg">
+    <!-- You can embed a Leaflet or Mapbox map here -->
+    <iframe src="https://www.openstreetmap.org/export/embed.html" class="w-full h-full border-none"></iframe>
+  </div>
+
+  <!-- Charts Section -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto">
+    <!-- Chart 1 -->
+    <div class="bg-white rounded-xl shadow-md p-4">
+      <h2 class="text-lg font-semibold mb-2">Energy Production vs Consumption</h2>
+      <canvas id="chartProductionConsumption"></canvas>
     </div>
 
-    <!-- Map Section -->
-    <div class="row mt-4">
-      <div class="col-12">
-        <div id="map" style="height: 500px;"></div>
-      </div>
+    <!-- Chart 2 -->
+    <div class="bg-white rounded-xl shadow-md p-4">
+      <h2 class="text-lg font-semibold mb-2">Self-Sufficiency Over Time</h2>
+      <canvas id="chartSelfSufficiency"></canvas>
     </div>
   </div>
 </section>
 
-<!-- JS to load map -->
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-const comuneName = "torino"; // change this dynamically later
+  const ctx1 = document.getElementById('chartProductionConsumption');
+  new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr'],
+      datasets: [
+        { label: 'Production', data: [120, 150, 180, 200], backgroundColor: 'rgba(34, 197, 94, 0.6)' },
+        { label: 'Consumption', data: [100, 130, 160, 190], backgroundColor: 'rgba(239, 68, 68, 0.6)' }
+      ]
+    }
+  });
 
-fetch(`/api/map_data/${comuneName}`)
-  .then(response => response.json())
-  .then(data => {
-    const map = L.map('map').setView([41.9028, 12.4964], 6); // Center on Italy
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-    
-    L.geoJSON(data).addTo(map);
+  const ctx2 = document.getElementById('chartSelfSufficiency');
+  new Chart(ctx2, {
+    type: 'line',
+    data: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr'],
+      datasets: [
+        { label: 'Self-Sufficiency %', data: [80, 85, 78, 90], borderColor: 'rgba(59, 130, 246, 1)', fill: false }
+      ]
+    }
   });
 </script>
-
 {% endblock %}
+

@@ -6,7 +6,6 @@ from flask_admin.contrib.sqla import ModelView
 from werkzeug.security import check_password_hash
 from models.user import User
 from extensions import db, login_manager
-
 from utils.functions import (
     get_residential_consumption,
     get_industrial_consumption,
@@ -25,9 +24,12 @@ from utils.functions import (
     month_map,
     season_months
 )
-
+from utils.db_utils import fetch_query
+from datetime import datetime
 import pandas as pd
 
+
+# Initialize Flask App
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://admin:MakDenerg%40@localhost/my_webapp_db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -64,13 +66,13 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-@app.route('/dashboard')
+@app.route('/dashboard.html')
 @login_required
 def dashboard():
     total_users = User.query.count()
     return render_template('dashboard.html', total_users=total_users)
 
-@app.route('/comune-overview', methods=['GET'])
+@app.route('/comune-overview')
 @login_required
 def comune_overview():
     selected_comune = request.args.get("comune")
@@ -107,12 +109,12 @@ def map_data(comune):
         return jsonify({'error': 'Comune not found'}), 404
     return jsonify(geojson)
 
-@app.route("/")
+@app.route('/')
 def index():
     comuni = get_unique_comuni_from_db()
-    return render_template("index.html", comuni=comuni)
+    return render_template("index.html", comuni=comuni, current_year=datetime.now().year)
 
-@app.route("/api/get_chart_data", methods=["POST"])
+@app.route('/api/get_chart_data', methods=["POST"])
 def get_chart_data():
     req = request.get_json()
     comune = req.get("comune", "").strip().lower()
@@ -181,6 +183,24 @@ def get_chart_data():
         "self_sufficiency": [],
         "self_consumption": []
     })
+
+# 🆕 Additional UI Routes
+@app.route('/scenario-builder.html')
+@login_required
+def scenario_builder():
+    return render_template('scenario-builder.html')
+
+@app.route('/about.html')
+def about():
+    return render_template('about.html')
+
+@app.route('/terms-of-use')
+def terms_of_use():
+    return render_template('terms.html')
+
+@app.route('/privacy-policy')
+def privacy_policy():
+    return render_template('privacy.html')
 
 if __name__ == "__main__":
     with app.app_context():
