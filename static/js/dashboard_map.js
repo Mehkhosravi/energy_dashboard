@@ -19,7 +19,6 @@ document.addEventListener("DOMContentLoaded", () => {
     areaSelect.innerHTML = `<option value="">-- Loading... --</option>`;
     areaSelect.disabled = true;
 
-    
     if (!level) {
       areaSelect.innerHTML = `<option value="">-- Select a level first --</option>`;
       return;

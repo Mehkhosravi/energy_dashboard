@@ -1,6 +1,6 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, login_user, logout_user, login_required
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from werkzeug.security import check_password_hash
@@ -21,33 +21,82 @@ from utils.functions import (
     get_future_wind_v80,
     get_geojson_for_comune,
     get_unique_comuni_from_db,
+    get_geojson_by_level,
     month_map,
     season_months
 )
 from utils.db_utils import fetch_query
-from datetime import datetime
+from models.banner import Banner
+from datetime import timedelta
+from flask_login import current_user
+from flask_admin import AdminIndexView, expose
+from flask_admin.form import FileUploadField
+from wtforms import validators
+import os
 import pandas as pd
 
-
-# Initialize Flask App
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://admin:MakDenerg%40@localhost/my_webapp_db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'your_super_secret_key'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
+app.config['SESSION_PERMANENT'] = True
 
 # Initialize Extensions
 db.init_app(app)
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-admin = Admin(app, name='Energy Admin Panel', template_mode='bootstrap4')
-admin.add_view(ModelView(User, db.session))
+# Secure admin index view
+class SecureAdminIndexView(AdminIndexView):
+    @expose('/')
+    def index(self):
+        if not current_user.is_authenticated or current_user.role != 'admin':
+            return redirect(url_for('login'))
+        return super().index()
+
+admin = Admin(app, name='Energy Admin Panel', template_mode='bootstrap4', index_view=SecureAdminIndexView())
+
+
+class UserAdmin(ModelView):
+    column_exclude_list = ['password']  # Hide in list view
+    form_excluded_columns = ['password']  # Hide in edit/create form
+
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.role == 'admin'
+
+    def inaccessible_callback(self, name, **kwargs):
+        return redirect(url_for('login'))
+
+
+admin.add_view(UserAdmin(User, db.session))
+
+class BannerAdmin(ModelView):
+    form_overrides = {
+        'image_url': FileUploadField
+    }
+    form_args = {
+        'image_url': {
+            'label': 'Banner Image',
+            'base_path': os.path.join(os.path.dirname(__file__), 'static/uploads'),
+            'relative_path': 'uploads/',
+            'validators': [validators.DataRequired()]
+        }
+    }
+
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.role == 'admin'
+    
+    def inaccessible_callback(self, name, **kwargs):
+        return redirect(url_for('login'))
+
+admin.add_view(BannerAdmin(Banner, db.session))
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form['username']
@@ -55,7 +104,8 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and check_password_hash(user.password, password):
             login_user(user)
-            return redirect(url_for('dashboard'))
+            session.permanent = True
+            return redirect(url_for('index'))
         else:
             flash('Invalid username or password')
     return render_template('login.html')
@@ -103,18 +153,25 @@ def get_comune_data(comune):
     return jsonify({"labels": list(data.keys()), "values": list(data.values())})
 
 @app.route('/api/map_data/<comune>')
+@login_required
 def map_data(comune):
+    print(f"[DEBUG] Comune requested: {comune}")
     geojson = get_geojson_for_comune(comune)
     if not geojson:
+        print("[DEBUG] No GeoJSON found!")
         return jsonify({'error': 'Comune not found'}), 404
+    print("[DEBUG] Returning GeoJSON")
     return jsonify(geojson)
 
-@app.route('/')
+@app.route('/home')
+@login_required
 def index():
     comuni = get_unique_comuni_from_db()
-    return render_template("index.html", comuni=comuni, current_year=datetime.now().year)
+    banners = Banner.query.filter_by(active=True).all()
+    return render_template("index.html", comuni=comuni, banners=banners)
 
 @app.route('/api/get_chart_data', methods=["POST"])
+@login_required
 def get_chart_data():
     req = request.get_json()
     comune = req.get("comune", "").strip().lower()
@@ -200,21 +257,52 @@ def get_names_by_level(level):
                     r['province_name'] if 'province_name' in r else
                     r['comune_name'] for r in rows])
 
-# 🆕 Additional UI Routes
+@app.route("/api/get_names/<level>")
+def get_names_by_level(level):
+    level = level.lower()
+    if level == "region":
+        query = "SELECT DISTINCT region FROM comune_mapping ORDER BY region"
+    elif level == "province":
+        query = "SELECT DISTINCT province FROM comune_mapping ORDER BY province"
+    elif level == "comune":
+        query = "SELECT DISTINCT comune FROM comune_mapping ORDER BY comune"
+    else:
+        return jsonify([])
+
+    rows = fetch_query(query)
+    names = [r[0] for r in rows]
+    return jsonify(names)
+
+@app.route("/api/map_data/<level>/<name>")
+def map_data_by_level(level, name):
+    if level not in ["region", "province", "comune"]:
+        return jsonify({"error": "Invalid level"}), 400
+
+    return jsonify(get_geojson_by_level(level, name))
+
+
+@app.route('/index.html')
+@login_required
+def index_page():
+    return redirect(url_for('index'))
+
 @app.route('/scenario-builder.html')
 @login_required
 def scenario_builder():
     return render_template('scenario-builder.html')
 
 @app.route('/about.html')
+@login_required
 def about():
     return render_template('about.html')
 
 @app.route('/terms-of-use')
+@login_required
 def terms_of_use():
     return render_template('terms.html')
 
 @app.route('/privacy-policy')
+@login_required
 def privacy_policy():
     return render_template('privacy.html')
 
