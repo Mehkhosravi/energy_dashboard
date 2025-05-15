@@ -1,22 +1,26 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const comuneName = "Torino"; // I have to make dynamic later
+fetch(`/api/map_data/Torino`)
+  .then(response => {
+    console.log("GeoJSON response status:", response.status);
+    return response.json();
+  })
+  .then(data => {
+    console.log("GeoJSON data received:", data);
 
-  fetch(`/api/map_data/${comuneName}`)
-    .then(response => response.json())
-    .then(data => {
-      const map = L.map('map');
+    const map = L.map('map').setView([41.9, 12.5], 6); // Default to Italy center
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
 
-      const geoLayer = L.geoJSON(data);
-      geoLayer.addTo(map);
+    if (!data || !data.features || data.features.length === 0) {
+      alert("No valid GeoJSON features found.");
+      return;
+    }
 
-      map.fitBounds(geoLayer.getBounds());
-    })
-    .catch(error => {
-      console.error("Map loading error:", error);
-      alert("Failed to load map for the selected comune.");
-    });
-});
+    const geoLayer = L.geoJSON(data).addTo(map);
+    map.fitBounds(geoLayer.getBounds());
+  })
+  .catch(error => {
+    console.error("Map loading error:", error);
+    alert("Failed to load map for the selected comune.");
+  });

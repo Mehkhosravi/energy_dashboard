@@ -1,9 +1,12 @@
 import pandas as pd
 import os
 import json
+import pyproj
 from shapely import wkt
+from shapely.ops import transform
 from utils.db_utils import fetch_query
 from models.commune_geometry import CommuneGeometry
+from extensions import db
 
 # === Mapping & Constants ===
 
@@ -79,15 +82,23 @@ def get_geojson_for_comune(comune_name):
     if not rows:
         return None
 
+    # ✅ Reproject from UTM Zone 32N to WGS84
+    src_crs = pyproj.CRS("EPSG:32632")  # UTM Zone 32N
+    dst_crs = pyproj.CRS("EPSG:4326")   # standard lon/lat
+    transformer = pyproj.Transformer.from_crs(src_crs, dst_crs, always_xy=True).transform
+
     features = []
     for row in rows:
-        geometry = wkt.loads(row["wkt"])
-        feature = {
+        geom_utm = wkt.loads(row['wkt'])
+        geom_latlon = transform(transformer, geom_utm)
+
+        features.append({
             "type": "Feature",
-            "geometry": json.loads(json.dumps(geometry.__geo_interface__)),
-            "properties": {"comune": row["comune_name"]}
-        }
-        features.append(feature)
+            "geometry": json.loads(json.dumps(geom_latlon.__geo_interface__)),
+            "properties": {
+                "comune": row["comune_name"]
+            }
+        })
 
     return {
         "type": "FeatureCollection",
