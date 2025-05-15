@@ -3,6 +3,7 @@ import os
 import json
 from shapely import wkt
 from utils.db_utils import fetch_query
+from models.commune_geometry import CommuneGeometry
 
 # === Mapping & Constants ===
 

@@ -1,33 +1,118 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Login - Admin Panel</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <meta charset="UTF-8" />
+  <title>Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
 
-  <div class="login-container">
-    <h2>Login to Admin Panel</h2>
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        {% for msg in messages %}
-          <p style="color:red;">{{ msg }}</p>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+  <!-- Background with Image -->
+  <div class="min-h-screen bg-cover bg-center relative"
+       style="background-image: url('{{ url_for('static', filename='/dist/assets/img/beautiful-alternative-energy-plant-with-solar-panels.jpg') }}');">
 
-    <form action="{{ url_for('login') }}" method="POST">
-      <label>Username:</label><br>
-      <input type="text" name="username" required><br><br>
+    <!-- OPTIONAL: Light overlay -->
+    <div class="absolute inset-0 bg-white bg-opacity-10 z-0"></div>
 
-      <label>Password:</label><br>
-      <input type="password" name="password" required><br><br>
+    <!-- Header -->
+    <div class="relative z-10 flex justify-between items-center px-8 py-4">
+      <!-- Left: Logo and Title -->
+      <div class="flex items-center gap-4">
+        <img src="{{ url_for('static', filename='/dist/assets/img/logo.png') }}" alt="Logo" class="h-10" />
+        <h2 class="font-semibold text-gray-800">Politecnico di Torino</h2>
+      </div>
 
-      <button type="submit">Login</button>
-    </form>
-  </div>
+      <!-- Right: Menu Dropdown -->
+      <div class="relative group">
+        <div class="flex items-center gap-4 cursor-pointer">
+          <span class="font-semibold text-gray-800">Sustainable Energy Platform</span>
+          <a href="#" class="text-2xl group-hover:text-purple-700 transition">&#9776;</a>
+        </div>
+
+        <!-- Dropdown Content -->
+        <div
+          class="absolute mt-2 right-0 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200 bg-white border rounded-xl shadow-lg w-56 z-50">
+          <a href="https://www.researchgate.net/publication/388389667_An_Italian_Geoportal_for_Renewable_Energy_Communities"
+             target="_blank"
+             class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 rounded-t-xl">
+            Articles
+          </a>
+          <a href="{{ url_for('about') }}"
+             class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 rounded-b-xl">
+            Our Team
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Centered Form -->
+    <div class="relative z-10 flex-grow flex justify-center items-start mt-12">
+      <form action="{{ url_for('login') }}" method="POST"
+            class="bg-white bg-opacity-90 px-10 py-8 rounded-xl shadow-md flex flex-col items-center">
+
+        <!-- Flash Message -->
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4 text-center w-72">
+              {% for msg in messages %}
+                <p>{{ msg }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <!-- Username -->
+        <div class="mb-4 w-72">
+          <label class="block relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+              <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2"
+                   viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M5.121 17.804A9 9 0 1118.88 6.195 9 9 0 015.12 17.804z" />
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </span>
+            <input name="username" required
+                   class="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-full focus:outline-none"
+                   type="text" placeholder="Username" />
+          </label>
+        </div>
+
+        <!-- Password -->
+        <div class="mb-6 w-72">
+          <label class="block relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+              <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2"
+                   viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M12 11c1.657 0 3 1.343 3 3v1H9v-1c0-1.657 1.343-3 3-3z" />
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M17 11V9a5 5 0 00-10 0v2H5v10h14V11h-2z" />
+              </svg>
+            </span>
+            <input name="password" required
+                   class="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-full focus:outline-none"
+                   type="password" placeholder="Password" />
+          </label>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit"
+                class="bg-blue-700 hover:bg-blue-800 text-white font-semibold py-2 px-8 rounded-full w-72 mb-4">
+          Get Started
+        </button>
+
+        <!-- Footer Links -->
+        <div class="flex justify-between w-72 text-xs text-gray-600">
+          <a href="#" class="hover:underline">Create Account</a>
+          <a href="#" class="hover:underline">Need Help?</a>
+        </div>
+      </form>
+    </div>
+
+  </div> <!-- End of background image container -->
 
 </body>
 </html>

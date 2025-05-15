@@ -6,6 +6,15 @@
   <h1 class="text-2xl font-bold">Welcome to the Energy Platform</h1>
   <!-- Hero Section -->
   <section class="py-24">
+    <!-- Banner Carousel or Static Display -->
+    <div id="banners" class="banner-section">
+      {% for banner in banners %}
+        <div class="banner-item">
+          <img src="{{ banner.image_url }}" alt="{{ banner.title }}" style="width: 100%; max-height: 300px; object-fit: cover; margin-bottom: 20px;">
+          <h3 style="text-align:center;">{{ banner.title }}</h3>
+        </div>
+      {% endfor %}
+    </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
       <!-- Left Side: Large Words -->
       <div class="space-y-16">
