@@ -183,6 +183,22 @@ def get_chart_data():
         "self_sufficiency": [],
         "self_consumption": []
     })
+@app.route('/api/get_names/<level>')
+def get_names_by_level(level):
+    level = level.lower()
+    if level == "region":
+        query = "SELECT DISTINCT region_name FROM comune_mapping ORDER BY region_name"
+    elif level == "province":
+        query = "SELECT DISTINCT province_name FROM comune_mapping ORDER BY province_name"
+    elif level == "comune":
+        query = "SELECT DISTINCT comune_name FROM comune_mapping ORDER BY comune_name"
+    else:
+        return jsonify([])
+
+    rows = fetch_query(query)
+    return jsonify([r['region_name'] if 'region_name' in r else
+                    r['province_name'] if 'province_name' in r else
+                    r['comune_name'] for r in rows])
 
 # 🆕 Additional UI Routes
 @app.route('/scenario-builder.html')

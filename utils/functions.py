@@ -97,3 +97,44 @@ def get_unique_comuni_from_db():
     query = "SELECT DISTINCT comune_name FROM commune_geometry ORDER BY comune_name"
     rows = fetch_query(query)
     return [row["comune_name"] for row in rows]
+
+def get_geojson_by_level(level, name):
+    column_map = {
+        "region": "region_name",
+        "province": "province_name",
+        "comune": "comune_name"
+    }
+
+    col = column_map.get(level)
+    if not col:
+        return None
+
+    query = f"""
+        SELECT g.wkt, m.{col}
+        FROM commune_geometry g
+        JOIN comune_mapping m ON g.comune_name = m.comune_name
+        WHERE LOWER(m.{col}) = LOWER(%s)
+    """
+    rows = fetch_query(query, (name,))
+    if not rows:
+        return {"type": "FeatureCollection", "features": []}
+
+    # Reproject
+    src_crs = pyproj.CRS("EPSG:32632")
+    dst_crs = pyproj.CRS("EPSG:4326")
+    transformer = pyproj.Transformer.from_crs(src_crs, dst_crs, always_xy=True).transform
+
+    features = []
+    for row in rows:
+        geom = wkt.loads(row['wkt'])
+        geom_latlon = transform(transformer, geom)
+        features.append({
+            "type": "Feature",
+            "geometry": json.loads(json.dumps(geom_latlon.__geo_interface__)),
+            "properties": {level: row[col]}
+        })
+
+    return {
+        "type": "FeatureCollection",
+        "features": features
+    }
