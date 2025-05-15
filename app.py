@@ -257,21 +257,6 @@ def get_names_by_level(level):
                     r['province_name'] if 'province_name' in r else
                     r['comune_name'] for r in rows])
 
-@app.route("/api/get_names/<level>")
-def get_names_by_level(level):
-    level = level.lower()
-    if level == "region":
-        query = "SELECT DISTINCT region FROM comune_mapping ORDER BY region"
-    elif level == "province":
-        query = "SELECT DISTINCT province FROM comune_mapping ORDER BY province"
-    elif level == "comune":
-        query = "SELECT DISTINCT comune FROM comune_mapping ORDER BY comune"
-    else:
-        return jsonify([])
-
-    rows = fetch_query(query)
-    names = [r[0] for r in rows]
-    return jsonify(names)
 
 @app.route("/api/map_data/<level>/<name>")
 def map_data_by_level(level, name):
