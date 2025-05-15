@@ -21,6 +21,7 @@ from utils.functions import (
     get_future_wind_v80,
     get_geojson_for_comune,
     get_unique_comuni_from_db,
+    get_geojson_by_level,
     month_map,
     season_months
 )
@@ -154,9 +155,12 @@ def get_comune_data(comune):
 @app.route('/api/map_data/<comune>')
 @login_required
 def map_data(comune):
+    print(f"[DEBUG] Comune requested: {comune}")
     geojson = get_geojson_for_comune(comune)
     if not geojson:
+        print("[DEBUG] No GeoJSON found!")
         return jsonify({'error': 'Comune not found'}), 404
+    print("[DEBUG] Returning GeoJSON")
     return jsonify(geojson)
 
 @app.route('/home')
@@ -236,6 +240,30 @@ def get_chart_data():
         "self_sufficiency": [],
         "self_consumption": []
     })
+
+@app.route("/api/get_names/<level>")
+def get_names_by_level(level):
+    level = level.lower()
+    if level == "region":
+        query = "SELECT DISTINCT region FROM comune_mapping ORDER BY region"
+    elif level == "province":
+        query = "SELECT DISTINCT province FROM comune_mapping ORDER BY province"
+    elif level == "comune":
+        query = "SELECT DISTINCT comune FROM comune_mapping ORDER BY comune"
+    else:
+        return jsonify([])
+
+    rows = fetch_query(query)
+    names = [r[0] for r in rows]
+    return jsonify(names)
+
+@app.route("/api/map_data/<level>/<name>")
+def map_data_by_level(level, name):
+    if level not in ["region", "province", "comune"]:
+        return jsonify({"error": "Invalid level"}), 400
+
+    return jsonify(get_geojson_by_level(level, name))
+
 
 @app.route('/index.html')
 @login_required

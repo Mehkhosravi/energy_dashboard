@@ -3,19 +3,25 @@
 {% block title %}Energy Dashboard{% endblock %}
 
 {% block content %}
-<section class="py-10">
-  <h1 class="text-3xl font-bold mb-6 mt-20 text-center">Energy Dashboard</h1>
+<!-- LEVEL SELECTOR -->
+<div class="mb-4 max-w-4xl mx-auto">
+  <label for="levelSelect" class="block text-sm font-medium mb-1">Select Level:</label>
+  <select id="levelSelect" class="w-full p-2 border rounded">
+    <option value="">-- Choose Level --</option>
+    <option value="region">Region</option>
+    <option value="province">Province</option>
+    <option value="comune">Municipality</option>
+  </select>
+</div>
 
-  <!-- Region/Province/Municipality Selector -->
-  <div class="bg-white rounded-xl shadow-md p-6 mb-8 max-w-4xl mx-auto">
-    <label for="locationSelect" class="block mb-2 text-sm font-medium text-gray-700">Select an Area:</label>
-    <select id="locationSelect" name="location" class="w-full p-3 rounded-lg border border-gray-300">
-      <option value="">-- Choose a Region, Province, or Municipality --</option>
-      <option value="region">Region</option>
-      <option value="province">Province</option>
-      <option value="municipality">Municipality</option>
-    </select>
-  </div>
+<!-- DYNAMIC NAME SELECTOR -->
+<div class="mb-6 max-w-4xl mx-auto">
+  <label for="areaSelect" class="block text-sm font-medium mb-1">Select Area:</label>
+  <select id="areaSelect" class="w-full p-2 border rounded" disabled>
+    <option value="">-- Select a level first --</option>
+  </select>
+</div>
+
 
   <!-- Map Section -->
   <div id="map" class="w-full h-[500px] rounded-xl border my-6"></div>
