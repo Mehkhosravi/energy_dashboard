@@ -41,3 +41,81 @@ function updateChartWithFilters() {
     })
     .catch(err => console.error("Chart fetch failed:", err));
 }
+
+let productionChart = null;
+let sufficiencyChart = null;
+
+function updateCharts(data) {
+  const months = data.months || [];
+
+  // Clear old chart if exists
+  if (productionChart) productionChart.destroy();
+  if (sufficiencyChart) sufficiencyChart.destroy();
+
+  const productionCtx = document.getElementById("chartProductionConsumption").getContext("2d");
+  const sufficiencyCtx = document.getElementById("chartSelfSufficiency").getContext("2d");
+
+  // Determine chart type
+  if (data.consumption) {
+    // Type: CONSUMPTION
+    productionChart = new Chart(productionCtx, {
+      type: 'bar',
+      data: {
+        labels: months,
+        datasets: [
+          { label: "Residential", data: data.residential, backgroundColor: "#4ade80" },
+          { label: "Industrial", data: data.industrial, backgroundColor: "#facc15" },
+          { label: "Commercial", data: data.commercial, backgroundColor: "#60a5fa" },
+          { label: "Agricultural", data: data.agricultural, backgroundColor: "#f87171" }
+        ]
+      }
+    });
+
+  } else if (data.production) {
+    // Type: PRODUCTION
+    productionChart = new Chart(productionCtx, {
+      type: 'bar',
+      data: {
+        labels: months,
+        datasets: [
+          {
+            label: `Production (${document.getElementById("energyType").value})`,
+            data: data.production,
+            backgroundColor: "#38bdf8"
+          }
+        ]
+      }
+    });
+
+  } else if (data.future) {
+    // Type: FUTURE PRODUCTION
+    productionChart = new Chart(productionCtx, {
+      type: 'bar',
+      data: {
+        labels: months,
+        datasets: [
+          {
+            label: `Future (${document.getElementById("energyType").value})`,
+            data: data.future,
+            backgroundColor: "#a78bfa"
+          }
+        ]
+      }
+    });
+  }
+
+  // For now, we'll keep Self-Sufficiency empty
+  sufficiencyChart = new Chart(sufficiencyCtx, {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [
+        {
+          label: "Self-Sufficiency (Placeholder)",
+          data: months.map(() => null),
+          borderColor: "#93c5fd"
+        }
+      ]
+    }
+  });
+}
