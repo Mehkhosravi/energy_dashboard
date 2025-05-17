@@ -32,16 +32,37 @@ def get_data_by_comune(table_name, comune_code):
 # === Named Helper Functions for Specific Tables ===
 
 # Consumption
-def get_residential_consumption(comune_code):
+def get_residential_consumption(comune_name):
+    query_code = "SELECT comune_code FROM comune_mapping WHERE LOWER(comune_name) = LOWER(%s)"
+    rows = fetch_query(query_code, (comune_name,))
+    if not rows:
+        return pd.Series([], name='value')
+    comune_code = rows[0]['comune_code']
     return get_data_by_comune("co_dom_com_o_table", comune_code)
 
-def get_industrial_consumption(comune_code):
+def get_industrial_consumption(comune_name):
+    query_code = "SELECT comune_code FROM comune_mapping WHERE LOWER(comune_name) = LOWER(%s)"
+    rows = fetch_query(query_code, (comune_name,))
+    if not rows:
+        return pd.Series([], name='value')
+    comune_code = rows[0]['comune_code']
     return get_data_by_comune("co_pri_com_o_table", comune_code)
 
-def get_agricultural_consumption(comune_code):
+def get_agricultural_consumption(comune_name):
+    query_code = "SELECT comune_code FROM comune_mapping WHERE LOWER(comune_name) = LOWER(%s)"
+    rows = fetch_query(query_code, (comune_name,))
+    if not rows:
+        return pd.Series([], name='value')
+    comune_code = rows[0]['comune_code']
     return get_data_by_comune("co_sec_com_o_table", comune_code)
 
-def get_commercial_consumption(comune_code):
+
+def get_commercial_consumption(comune_name):
+    query_code = "SELECT comune_code FROM comune_mapping WHERE LOWER(comune_name) = LOWER(%s)"
+    rows = fetch_query(query_code, (comune_name,))
+    if not rows:
+        return pd.Series([], name='value')
+    comune_code = rows[0]['comune_code']
     return get_data_by_comune("co_ter_com_o_table", comune_code)
 
 # Actual Production
@@ -123,11 +144,12 @@ def get_geojson_by_level(level, name):
         return None
 
     query = f"""
-        SELECT g.wkt, m.{col}
+        SELECT g.wkt, m.comune_name, m.province_name, m.region_name
         FROM commune_geometry g
         JOIN comune_mapping m ON g.comune_name = m.comune_name
         WHERE LOWER(m.{col}) = LOWER(%s)
     """
+
     rows = fetch_query(query, (name,))
     if not rows:
         return {"type": "FeatureCollection", "features": []}
@@ -144,7 +166,11 @@ def get_geojson_by_level(level, name):
         features.append({
             "type": "Feature",
             "geometry": json.loads(json.dumps(geom_latlon.__geo_interface__)),
-            "properties": {level: row[col]}
+            "properties": {
+                "comune": row.get("comune_name"),
+                "province": row.get("province_name"),
+                "region": row.get("region_name")
+            }
         })
 
     return {

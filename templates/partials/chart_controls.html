@@ -1,0 +1,22 @@
+<div id="chart-controls" class="max-w-6xl mx-auto mb-8">
+  <!-- Data Type Selector -->
+  <div class="mb-4">
+    <label for="dataType" class="block text-sm font-medium text-gray-700 mb-1">Select Data Type:</label>
+    <select id="dataType" class="w-full p-2 border rounded">
+      <option value="consumption">Consumption</option>
+      <option value="production">Production</option>
+      <option value="future">Future Production</option>
+    </select>
+  </div>
+
+  <!-- Energy Source Selector (only visible for production/future) -->
+  <div class="mb-4 hidden" id="energyTypeGroup">
+    <label for="energyType" class="block text-sm font-medium text-gray-700 mb-1">Select Energy Source:</label>
+    <select id="energyType" class="w-full p-2 border rounded">
+      <option value="solar">Solar</option>
+      <option value="hydro">Hydroelectric</option>
+      <option value="wind">Wind Turbine</option>
+      <option value="biomass">Biomass</option>
+    </select>
+  </div>
+</div>

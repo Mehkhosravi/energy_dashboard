@@ -152,7 +152,7 @@ def get_comune_data(comune):
     data = filtered.iloc[0].to_dict()
     return jsonify({"labels": list(data.keys()), "values": list(data.values())})
 
-@app.route('/api/map_data/<comune>')
+@app.route("/api/map_data/<comune>")
 @login_required
 def map_data(comune):
     print(f"[DEBUG] Comune requested: {comune}")
@@ -170,7 +170,7 @@ def index():
     banners = Banner.query.filter_by(active=True).all()
     return render_template("index.html", comuni=comuni, banners=banners)
 
-@app.route('/api/get_chart_data', methods=["POST"])
+@app.route("/api/get_chart_data", methods=["POST"])
 @login_required
 def get_chart_data():
     req = request.get_json()
@@ -240,7 +240,7 @@ def get_chart_data():
         "self_sufficiency": [],
         "self_consumption": []
     })
-@app.route('/api/get_names/<level>')
+@app.route("/api/get_names/<level>")
 def get_names_by_level(level):
     level = level.lower()
     if level == "region":
@@ -264,6 +264,78 @@ def map_data_by_level(level, name):
         return jsonify({"error": "Invalid level"}), 400
 
     return jsonify(get_geojson_by_level(level, name))
+
+@app.route("/api/chart_data/<level>/<name>")
+def get_area_chart_data(level, name):
+    level = level.lower()
+    name = name.lower()
+
+    # For now, we only implement consumption; production comes next
+    residential = get_residential_consumption(name)
+    industrial = get_industrial_consumption(name)
+    commercial = get_commercial_consumption(name)
+    agricultural = get_agricultural_consumption(name)
+
+    months = list(residential.index)  # Assuming all have the same index
+
+    return jsonify({
+        "months": list(residential["month"]),
+        "residential": residential["value"].tolist(),
+        "industrial": industrial["value"].tolist(),
+        "commercial": commercial["value"].tolist(),
+        "agricultural": agricultural["value"].tolist()
+    })
+
+@app.route("/api/chart_data/<data_type>/<comune>")
+def get_filtered_chart_data(data_type, comune):
+    comune = comune.lower()
+
+    if data_type == "consumption":
+        residential = get_residential_consumption(comune)
+        industrial = get_industrial_consumption(comune)
+        commercial = get_commercial_consumption(comune)
+        agricultural = get_agricultural_consumption(comune)
+
+        months = list(residential.index)
+
+        return jsonify({
+            "months": months,
+            "residential": residential.tolist(),
+            "industrial": industrial.tolist(),
+            "commercial": commercial.tolist(),
+            "agricultural": agricultural.tolist()
+        })
+
+    elif data_type == "production":
+        source = request.args.get("source")
+        func_map = {
+            "solar": get_solar_production,
+            "hydro": get_hydro_production,
+            "wind": get_wind_production,
+            "biomass": get_bio_production
+        }
+        if source in func_map:
+            df = func_map[source](comune)
+            return jsonify({
+                "months": list(df.index),
+                "production": df.tolist()
+            })
+
+    elif data_type == "future":
+        source = request.args.get("source")
+        func_map = {
+            "biomass": get_future_bio,
+            "wind_v52": get_future_wind_v52,
+            "wind_v80": get_future_wind_v80
+        }
+        if source in func_map:
+            df = func_map[source](comune)
+            return jsonify({
+                "months": list(df.index),
+                "future": df.tolist()
+            })
+
+    return jsonify({})
 
 
 @app.route('/index.html')

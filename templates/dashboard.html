@@ -20,8 +20,8 @@
   <!-- DYNAMIC NAME SELECTOR -->
   <div class="mb-6 max-w-4xl mx-auto">
     <label for="areaSelect" class="block text-sm font-medium mb-1">Select Area:</label>
-    <select id="areaSelect" class="w-full p-2 border rounded" disabled>
-      <option value="">-- Select a level first --</option>
+    <select id="areaSelect" class="w-full p-2 border rounded" >
+      <option value="">-- Choose --</option>
     </select>
   </div>
 
@@ -29,7 +29,7 @@
   <!-- Map Section -->
   <div id="map" class="w-full h-[500px] rounded-xl border my-6"></div>
 
-
+  {% include "partials/chart_controls.html" %}
   <!-- Charts Section -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto">
     <!-- Chart 1 -->
@@ -48,30 +48,6 @@
 
 <!-- Chart.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-  const ctx1 = document.getElementById('chartProductionConsumption');
-  new Chart(ctx1, {
-    type: 'bar',
-    data: {
-      labels: ['Jan', 'Feb', 'Mar', 'Apr'],
-      datasets: [
-        { label: 'Production', data: [120, 150, 180, 200], backgroundColor: 'rgba(34, 197, 94, 0.6)' },
-        { label: 'Consumption', data: [100, 130, 160, 190], backgroundColor: 'rgba(239, 68, 68, 0.6)' }
-      ]
-    }
-  });
-
-  const ctx2 = document.getElementById('chartSelfSufficiency');
-  new Chart(ctx2, {
-    type: 'line',
-    data: {
-      labels: ['Jan', 'Feb', 'Mar', 'Apr'],
-      datasets: [
-        { label: 'Self-Sufficiency %', data: [80, 85, 78, 90], borderColor: 'rgba(59, 130, 246, 1)', fill: false }
-      ]
-    }
-  });
-</script>
+<script src="{{ url_for('static', filename='js/chart_controls.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dashboard_map.js') }}"></script>
 {% endblock %}
-
