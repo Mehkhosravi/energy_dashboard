@@ -3,45 +3,90 @@
 {% block title %}Energy Dashboard{% endblock %}
 
 {% block content %}
-<section class="py-10">
-  <h1 class="text-3xl font-bold mb-6 mt-20 text-center">Energy Dashboard</h1>
+<section class="py-10 mt-10">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full px-6 h-[calc(100vh-5rem)]">
 
-  <!-- LEVEL SELECTOR -->
-  <div class="mb-4 max-w-4xl mx-auto">
-    <label for="levelSelect" class="block text-sm font-medium mb-1">Select Level:</label>
-    <select id="levelSelect" class="w-full p-2 border rounded">
-      <option value="">-- Choose Level --</option>
-      <option value="region">Region</option>
-      <option value="province">Province</option>
-      <option value="comune">Municipality</option>
-    </select>
-  </div>
+  <!-- Left Column (Selectors + Map) -->
+  <div class="flex flex-col bg-gray-100 rounded-xl p-4 min-h-[400px]">
+    <!-- Selectors -->
+    <div class="mb-4">
+      <div class="flex flex-col sm:flex-row sm:items-end sm:space-x-4">
+        <div class="flex-1">
+          <label for="levelSelect" class="block text-sm font-medium mb-1">Select Level:</label>
+          <select id="levelSelect" class="w-full p-2 border rounded">
+            <option value="">-- Choose Level --</option>
+            <option value="region">Region</option>
+            <option value="province">Province</option>
+            <option value="comune">Municipality</option>
+          </select>
+        </div>
 
-  <!-- DYNAMIC NAME SELECTOR -->
-  <div class="mb-6 max-w-4xl mx-auto">
-    <label for="areaSelect" class="block text-sm font-medium mb-1">Select Area:</label>
-    <select id="areaSelect" class="w-full p-2 border rounded" >
-      <option value="">-- Choose --</option>
-    </select>
-  </div>
-
-
-  <!-- Map Section -->
-  <div id="map" class="w-full h-[500px] rounded-xl border my-6"></div>
-
-  {% include "partials/chart_controls.html" %}
-  <!-- Charts Section -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto">
-    <!-- Chart 1 -->
-    <div class="bg-white rounded-xl shadow-md p-4">
-      <h2 class="text-lg font-semibold mb-2">Energy Production vs Consumption</h2>
-      <canvas id="chartProductionConsumption"></canvas>
+        <div class="flex-1 mt-4 sm:mt-0">
+          <label for="areaSelect" class="block text-sm font-medium mb-1">Select Area:</label>
+          <select id="areaSelect" class="w-full p-2 border rounded">
+            <option value="">-- Choose --</option>
+          </select>
+        </div>
+      </div>
     </div>
 
-    <!-- Chart 2 -->
-    <div class="bg-white rounded-xl shadow-md p-4">
-      <h2 class="text-lg font-semibold mb-2">Self-Sufficiency Over Time</h2>
-      <canvas id="chartSelfSufficiency"></canvas>
+    <!-- Map Section -->
+    <div id="map" class="w-full flex-grow min-h-[300px] rounded-xl border"></div>
+  </div>
+
+
+    <!-- Right Column (Controls + Charts) -->
+    <div class="lg:col-span-2 bg-gray-100 rounded-xl p-4 flex flex-col justify-between h-full">
+
+      <!-- Chart Controls -->
+      <div class="flex flex-wrap items-end space-y-4 sm:space-y-0 sm:space-x-4 mb-4">
+        <div class="w-full sm:w-auto">
+          <label for="dataType" class="block text-sm font-medium mb-1">Select Data Type:</label>
+          <select id="dataType" class="p-2 border rounded w-full sm:w-48">
+            <option value="consumption">Consumption</option>
+            <option value="production">Production</option>
+            <option value="future">Future Production</option>
+          </select>
+        </div>
+
+        <div id="energyTypeGroup" class="w-full sm:w-auto hidden">
+          <label for="energyType" class="block text-sm font-medium mb-1">Select Energy Source:</label>
+          <select id="energyType" class="p-2 border rounded w-full sm:w-48">
+            <option value="solar">Solar</option>
+            <option value="wind">Wind</option>
+            <option value="hydro">Hydro</option>
+            <option value="bio">Biomass</option>
+            <option value="geo">Geothermal</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Charts Section -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 flex-grow">
+        <!-- Chart 1 -->
+        <div class="bg-white rounded-xl shadow-md p-3 flex flex-col">
+          <h2 class="text-md font-semibold mb-2">Energy Production vs Consumption</h2>
+          <canvas id="chartProductionConsumption" class="flex-grow w-full"></canvas>
+        </div>
+
+        <!-- Chart 2 -->
+        <div class="bg-white rounded-xl shadow-md p-3 flex flex-col">
+          <h2 class="text-md font-semibold mb-2">Self-Sufficiency Over Time</h2>
+          <canvas id="chartSelfSufficiency" class="flex-grow w-full"></canvas>
+        </div>
+
+        <!-- Chart 3 -->
+        <div class="bg-white rounded-xl shadow-md p-3 flex flex-col">
+          <h2 class="text-md font-semibold mb-2">Future Energy Forecast</h2>
+          <canvas id="chartFutureForecast" class="flex-grow w-full"></canvas>
+        </div>
+
+        <!-- Chart 4 -->
+        <div class="bg-white rounded-xl shadow-md p-3 flex flex-col">
+          <h2 class="text-md font-semibold mb-2">Energy Type Distribution</h2>
+          <canvas id="chartTypeDistribution" class="flex-grow w-full"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 </section>
