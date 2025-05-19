@@ -265,26 +265,74 @@ def map_data_by_level(level, name):
 
     return jsonify(get_geojson_by_level(level, name))
 
-@app.route("/api/chart_data/<level>/<name>")
-def get_area_chart_data(level, name):
-    level = level.lower()
-    name = name.lower()
+# @app.route("/api/chart_data/<data_type>/<comune>")
+def get_area_chart_data(data_type, comune):
+    comune = comune.lower()
+    time = request.args.get("time", "all")
+    selected_month = request.args.get("month")
+    selected_season = request.args.get("season")
+    source = request.args.get("source")
 
-    # For now, we only implement consumption; production comes next
-    residential = get_residential_consumption(name)
-    industrial = get_industrial_consumption(name)
-    commercial = get_commercial_consumption(name)
-    agricultural = get_agricultural_consumption(name)
+    # Map season to months
+    season_months = {
+        "warm": ['apr', 'mag', 'giu', 'lug', 'ago', 'set'],
+        "cold": ['ott', 'nov', 'dic', 'gen', 'feb', 'mar']
+    }
 
-    months = list(residential.index)  # Assuming all have the same index
+    def filter_by_month(df):
+        if "month" not in df.columns:
+            return df
+        if time == "monthly" and selected_month:
+            return df[df["month"].str.lower() == selected_month.lower()]
+        elif time == "seasonal" and selected_season in season_months:
+            return df[df["month"].str.lower().isin(season_months[selected_season])]
+        return df  # fallback
 
-    return jsonify({
-        "months": list(residential["month"]),
-        "residential": residential["value"].tolist(),
-        "industrial": industrial["value"].tolist(),
-        "commercial": commercial["value"].tolist(),
-        "agricultural": agricultural["value"].tolist()
-    })
+    # Consumption
+    if data_type == "consumption":
+        residential = filter_by_month(get_residential_consumption(comune))
+        industrial = filter_by_month(get_industrial_consumption(comune))
+        commercial = filter_by_month(get_commercial_consumption(comune))
+        agricultural = filter_by_month(get_agricultural_consumption(comune))
+
+        return jsonify({
+            "months": residential["month"].tolist() if "month" in residential else [],
+            "residential": residential["value"].tolist() if "value" in residential else [],
+            "industrial": industrial["value"].tolist() if "value" in industrial else [],
+            "commercial": commercial["value"].tolist() if "value" in commercial else [],
+            "agricultural": agricultural["value"].tolist() if "value" in agricultural else []
+        })
+
+    # Production
+    elif data_type == "production":
+        func_map = {
+            "solar": get_solar_production,
+            "hydro": get_hydro_production,
+            "wind": get_wind_production,
+            "biomass": get_bio_production
+        }
+        if source in func_map:
+            df = filter_by_month(func_map[source](comune))
+            return jsonify({
+                "months": df["month"].tolist() if "month" in df else [],
+                "production": df["value"].tolist() if "value" in df else []
+            })
+
+    # Future Production
+    elif data_type == "future":
+        func_map = {
+            "biomass": get_future_bio,
+            "wind_v52": get_future_wind_v52,
+            "wind_v80": get_future_wind_v80
+        }
+        if source in func_map:
+            df = filter_by_month(func_map[source](comune))
+            return jsonify({
+                "months": df["month"].tolist() if "month" in df else [],
+                "future": df["value"].tolist() if "value" in df else []
+            })
+
+    return jsonify({})
 
 @app.route("/api/chart_data/<data_type>/<comune>")
 def get_filtered_chart_data(data_type, comune):

@@ -16,3 +16,13 @@
     padding: 10px 20px;
   }
   
+  #downloadChart, #downloadMap {
+  z-index: 50;
+  position: relative;
+  }
+
+  canvas {
+  max-width: 100% !important;
+  height: auto !important;
+  }
+

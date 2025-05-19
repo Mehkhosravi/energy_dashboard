@@ -69,7 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
       .then(data => {
         console.log("GeoJSON data received:", data);
 
-        if (!data || !data.features || data.features.length === 0) {
+        if (!data?.features || data.features.length === 0) {
           alert("No valid GeoJSON features found.");
           return;
         }
