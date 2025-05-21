@@ -25,6 +25,8 @@ from utils.functions import (
     month_map,
     season_months
 )
+from flask_admin import Admin
+from flask_admin.contrib.sqla import ModelView
 from utils.db_utils import fetch_query
 from models.banner import Banner
 from datetime import timedelta
@@ -334,56 +336,77 @@ def get_area_chart_data(data_type, comune):
 
     return jsonify({})
 
+
 @app.route("/api/chart_data/<data_type>/<comune>")
 def get_filtered_chart_data(data_type, comune):
     comune = comune.lower()
 
-    if data_type == "consumption":
-        residential = get_residential_consumption(comune)
-        industrial = get_industrial_consumption(comune)
-        commercial = get_commercial_consumption(comune)
-        agricultural = get_agricultural_consumption(comune)
+    if data_type == "monthly":
+        # Group by month
+        monthly = {}
+        for name, df in consumption.items():
+            df["month"] = df["month"].astype(str).str.lower()  # ensure string
+            grouped = df.groupby("month")["value"].sum()
+            monthly[name] = grouped
 
-        months = list(residential.index)
+        # Normalize all index values to strings
+        all_months = {str(m).lower() for series in monthly.values() for m in series.index}
 
-        return jsonify({
-            "months": months,
-            "residential": residential.tolist(),
-            "industrial": industrial.tolist(),
-            "commercial": commercial.tolist(),
-            "agricultural": agricultural.tolist()
-        })
+        # Only sort the months that match your defined month_map order
+        sorted_months = [m for m in month_map.keys() if m in all_months]
+
+        # Final labels using month_map
+        labels = [month_map[m] for m in sorted_months]
+
+        # Build the output chart data
+        output = {"months": labels}
+        for name in sectors:
+            s = monthly[name]
+            s.index = s.index.map(str.lower)
+            s = s.reindex(sorted_months, fill_value=0)
+            output[name] = s.tolist()
+        
+        return jsonify(output)
+
 
     elif data_type == "production":
         source = request.args.get("source")
-        func_map = {
-            "solar": get_solar_production,
-            "hydro": get_hydro_production,
-            "wind": get_wind_production,
+        funcs = {
+            "solar":   get_solar_production,
+            "hydro":   get_hydro_production,
+            "wind":    get_wind_production,
             "biomass": get_bio_production
         }
-        if source in func_map:
-            df = func_map[source](comune)
-            return jsonify({
-                "months": list(df.index),
-                "production": df.tolist()
-            })
+        if source in funcs:
+            df = funcs[source](comune)
+            if "month" in df.columns and "value" in df.columns:
+                labels = df["month"].tolist()
+                data   = df["value"].tolist()
+            else:
+                labels = []
+                data   = []
+            return jsonify({ "months": labels, "production": data })
 
     elif data_type == "future":
         source = request.args.get("source")
-        func_map = {
+        funcs = {
             "biomass": get_future_bio,
             "wind_v52": get_future_wind_v52,
             "wind_v80": get_future_wind_v80
         }
-        if source in func_map:
-            df = func_map[source](comune)
-            return jsonify({
-                "months": list(df.index),
-                "future": df.tolist()
-            })
+        if source in funcs:
+            df = funcs[source](comune)
+            if "month" in df.columns and "value" in df.columns:
+                labels = df["month"].tolist()
+                data   = df["value"].tolist()
+            else:
+                labels = []
+                data   = []
+            return jsonify({ "months": labels, "future": data })
 
+    # fallback
     return jsonify({})
+
 
 
 @app.route('/index.html')
