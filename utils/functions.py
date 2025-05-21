@@ -56,7 +56,6 @@ def get_agricultural_consumption(comune_name):
     comune_code = rows[0]['comune_code']
     return get_data_by_comune("co_sec_com_o_table", comune_code)
 
-
 def get_commercial_consumption(comune_name):
     query_code = "SELECT comune_code FROM comune_mapping WHERE LOWER(comune_name) = LOWER(%s)"
     rows = fetch_query(query_code, (comune_name,))
@@ -177,3 +176,22 @@ def get_geojson_by_level(level, name):
         "type": "FeatureCollection",
         "features": features
     }
+
+def get_comuni_by_level(level, name):
+    """
+    Returns a list of comune codes given the level (region/province/comune) and name.
+    """
+    level = level.lower()
+    query = ""
+
+    if level == "region":
+        query = "SELECT DISTINCT comune_code FROM comune_mapping WHERE LOWER(region_name) = %s"
+    elif level == "province":
+        query = "SELECT DISTINCT comune_code FROM comune_mapping WHERE LOWER(province_name) = %s"
+    elif level == "comune":
+        query = "SELECT DISTINCT comune_code FROM comune_mapping WHERE LOWER(comune_name) = %s"
+    else:
+        return []
+
+    results = fetch_query(query, (name.lower(),))
+    return [str(r["comune_code"]) for r in results]

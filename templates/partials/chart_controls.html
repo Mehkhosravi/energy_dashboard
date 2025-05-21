@@ -25,3 +25,57 @@
   <button id="downloadChart" class="bg-blue-500 text-white px-4 py-2 rounded shadow hover:bg-blue-600">Download Chart</button>
   <button id="downloadMap" class="bg-green-500 text-white px-4 py-2 rounded shadow hover:bg-green-600">Download Map</button>
 </div>
+
+<!-- Filter Panel -->
+  <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
+    <div>
+      <label for="yearSelect">Year(s):</label>
+      <select id="yearSelect" class="w-full p-2 border rounded" multiple>
+        <option value="2022">2022</option>
+        <option value="2023">2023</option>
+        <option value="2024">2024</option>
+      </select>
+    </div>
+    <div>
+      <label for="monthSelect">Month(s):</label>
+      <select id="monthSelect" class="w-full p-2 border rounded" multiple>
+        <option value="jan">Jan</option>
+        <option value="feb">Feb</option>
+        <option value="mar">Mar</option>
+        <option value="apr">Apr</option>
+        <option value="may">May</option>
+        <option value="jun">Jun</option>
+        <option value="jul">Jul</option>
+        <option value="aug">Aug</option>
+        <option value="sep">Sep</option>
+        <option value="oct">Oct</option>
+        <option value="nov">Nov</option>
+        <option value="dec">Dec</option>
+      </select>
+    </div>
+    <div>
+      <label for="seasonSelect">Season:</label>
+      <select id="seasonSelect" class="w-full p-2 border rounded">
+        <option value="">All</option>
+        <option value="warm">Warm (Apr–Sep)</option>
+        <option value="cold">Cold (Oct–Mar)</option>
+      </select>
+    </div>
+    <div>
+      <label for="dayTypeSelect">Day Type:</label>
+      <select id="dayTypeSelect" class="w-full p-2 border rounded">
+        <option value="">All</option>
+        <option value="weekday">Weekday</option>
+        <option value="weekend">Weekend</option>
+      </select>
+    </div>
+    <div class="col-span-2">
+      <label>Hour Range:</label>
+      <div class="flex space-x-2">
+        <input type="number" id="hourStart" class="w-1/2 p-2 border rounded" placeholder="From (e.g. 6)" min="0" max="23" />
+        <input type="number" id="hourEnd" class="w-1/2 p-2 border rounded" placeholder="To (e.g. 18)" min="0" max="23" />
+      </div>
+    </div>
+  </div>
+
+</div>

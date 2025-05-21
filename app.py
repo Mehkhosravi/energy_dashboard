@@ -23,8 +23,11 @@ from utils.functions import (
     get_unique_comuni_from_db,
     get_geojson_by_level,
     month_map,
+    get_comuni_by_level,
+    get_data_by_comune,
     season_months
 )
+from utils.filters import apply_filters, parse_filters
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from utils.db_utils import fetch_query
@@ -270,41 +273,42 @@ def map_data_by_level(level, name):
 @app.route("/api/chart_data/<data_type>/<comune>")
 def get_chart_data_time(data_type, comune):
     comune = comune.lower()
-    time = request.args.get("time", "all")
-    selected_month = request.args.get("month")
-    selected_season = request.args.get("season")
+    filters = parse_filters()
     source = request.args.get("source")
 
-    # Cold/warm mapping
-    season_months = {
-        "warm": ['apr', 'mag', 'giu', 'lug', 'ago', 'set'],
-        "cold": ['ott', 'nov', 'dic', 'gen', 'feb', 'mar']
-    }
+    # Try detecting comune codes from name
+    comuni_codes = get_comuni_by_level("comune", comune)
+    if not comuni_codes:
+        comuni_codes = get_comuni_by_level("province", comune)
+    if not comuni_codes:
+        comuni_codes = get_comuni_by_level("region", comune)
 
-    def filter_df(df):
-        if "month" not in df.columns:
-            return df
-        df["month"] = df["month"].astype(str).str.lower()
-        if time == "monthly" and selected_month:
-            return df[df["month"] == selected_month.lower()]
-        elif time == "seasonal" and selected_season in season_months:
-            return df[df["month"].isin(season_months[selected_season])]
-        return df
+    if not comuni_codes:
+        return jsonify({"error": "No matching comuni found."}), 404
 
+    # ========== CONSUMPTION ==========
     if data_type == "consumption":
-        residential = filter_df(get_residential_consumption(comune))
-        industrial = filter_df(get_industrial_consumption(comune))
-        commercial = filter_df(get_commercial_consumption(comune))
-        agricultural = filter_df(get_agricultural_consumption(comune))
+        result = {}
+        months = []
 
-        return jsonify({
-            "months": residential["month"].tolist() if "month" in residential else [],
-            "residential": residential["value"].tolist() if "value" in residential else [],
-            "industrial": industrial["value"].tolist() if "value" in industrial else [],
-            "commercial": commercial["value"].tolist() if "value" in commercial else [],
-            "agricultural": agricultural["value"].tolist() if "value" in agricultural else []
-        })
+        for name, func in {
+            "residential": get_residential_consumption,
+            "industrial": get_industrial_consumption,
+            "commercial": get_commercial_consumption,
+            "agricultural": get_agricultural_consumption
+        }.items():
+            dfs = [func(code) for code in comuni_codes if code.isdigit()]
+            df = pd.concat(dfs) if dfs else pd.DataFrame()
+            df_filtered = apply_filters(df, filters)
 
+            result[name] = df_filtered["value"].tolist() if "value" in df_filtered else []
+            if "month" in df_filtered:
+                months = df_filtered["month"].tolist()
+
+        result["months"] = months
+        return jsonify(result)
+
+    # ========== PRODUCTION ==========
     elif data_type == "production":
         func_map = {
             "solar": get_solar_production,
@@ -313,12 +317,16 @@ def get_chart_data_time(data_type, comune):
             "biomass": get_bio_production
         }
         if source in func_map:
-            df = filter_df(func_map[source](comune))
+            dfs = [func_map[source](code) for code in comuni_codes if code.isdigit()]
+            df = pd.concat(dfs) if dfs else pd.DataFrame()
+            df_filtered = apply_filters(df, filters)
+
             return jsonify({
-                "months": df["month"].tolist() if "month" in df else [],
-                "production": df["value"].tolist() if "value" in df else []
+                "months": df_filtered["month"].tolist() if "month" in df_filtered else [],
+                "production": df_filtered["value"].tolist() if "value" in df_filtered else []
             })
 
+    # ========== FUTURE PRODUCTION ==========
     elif data_type == "future":
         func_map = {
             "biomass": get_future_bio,
@@ -326,14 +334,16 @@ def get_chart_data_time(data_type, comune):
             "wind_v80": get_future_wind_v80
         }
         if source in func_map:
-            df = filter_df(func_map[source](comune))
+            dfs = [func_map[source](code) for code in comuni_codes if code.isdigit()]
+            df = pd.concat(dfs) if dfs else pd.DataFrame()
+            df_filtered = apply_filters(df, filters)
+
             return jsonify({
-                "months": df["month"].tolist() if "month" in df else [],
-                "future": df["value"].tolist() if "value" in df else []
+                "months": df_filtered["month"].tolist() if "month" in df_filtered else [],
+                "future": df_filtered["value"].tolist() if "value" in df_filtered else []
             })
 
     return jsonify({})
-
 
 @app.route('/index.html')
 @login_required
