@@ -3,15 +3,16 @@
 {% block title %}Energy Dashboard{% endblock %}
 
 {% block content %}
-<section class="py-10 mt-10">
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full px-6 h-[calc(100vh-5rem)]">
+<section class="pt-25 px-4">
+  <div class="flex gap-4 items-start w-full">
 
-  <!-- Left Column (Selectors + Map) -->
-  <div class="flex flex-col bg-gray-100 rounded-xl p-4 min-h-[400px]">
-    <!-- Selectors -->
-    <div class="mb-4">
-      <div class="flex flex-col sm:flex-row sm:items-end sm:space-x-4">
-        <div class="flex-1">
+    <!-- Filter + Download -->
+    <div class="flex flex-col gap-4 w-[240px]">
+      <!-- Filter Sidebar -->
+      <div class="bg-gray-100 rounded-xl p-4 shadow-sm">
+        <h2 class="text-md font-semibold mb-4">Filter Section:</h2>
+
+        <div class="mb-3">
           <label for="levelSelect" class="block text-sm font-medium mb-1">Select Level:</label>
           <select id="levelSelect" class="w-full p-2 border rounded">
             <option value="">-- Choose Level --</option>
@@ -21,86 +22,58 @@
           </select>
         </div>
 
-        <div class="flex-1 mt-4 sm:mt-0">
+        <div class="mb-3">
           <label for="areaSelect" class="block text-sm font-medium mb-1">Select Area:</label>
           <select id="areaSelect" class="w-full p-2 border rounded">
             <option value="">-- Choose --</option>
           </select>
         </div>
+
+        {% include "partials/chart_controls.html" %}
+      </div>
+
+      <!-- Download Panel -->
+      <div class="bg-gray-100 rounded-xl p-4 shadow-sm">
+        <h2 class="text-md font-semibold mb-3">Download File:</h2>
+        <button id="downloadChart" class="bg-blue-500 text-white px-4 py-2 mb-2 w-full rounded hover:bg-blue-600">Download Chart</button>
+        <button id="downloadMap" class="bg-green-500 text-white px-4 py-2 w-full rounded hover:bg-green-600">Download Map</button>
       </div>
     </div>
 
-    <!-- Map Section -->
-    <div id="map" class="w-full flex-grow min-h-[300px] rounded-xl border"></div>  
-    <!-- Download Buttons -->
-    <div class="text-center my-6 space-x-4">
-      <button id="downloadChart" class="bg-blue-500 text-white px-4 py-2 rounded shadow hover:bg-blue-600">
-        Download Chart
-      </button>
-      <button id="downloadMap" class="bg-green-500 text-white px-4 py-2 rounded shadow hover:bg-green-600">
-        Download Map
-      </button>
-    </div>
-  </div>
-    <!-- Right Column (Controls + Charts) -->
-    <div class="lg:col-span-2 bg-gray-100 rounded-xl p-4 flex flex-col justify-between h-full">
+    <!-- Map + Charts Section -->
+    <div class="flex-1 grid grid-cols-1 xl:grid-cols-2 gap-4">
 
-      <!-- Chart Controls -->
-      <div class="flex flex-wrap items-end space-y-4 sm:space-y-0 sm:space-x-4 mb-4">
-        <div class="w-full sm:w-auto">
-          <label for="dataType" class="block text-sm font-medium mb-1">Select Data Type:</label>
-          <select id="dataType" class="p-2 border rounded w-full sm:w-48">
-            <option value="consumption">Consumption</option>
-            <option value="production">Production</option>
-            <option value="future">Future Production</option>
-          </select>
-        </div>
-
-        <div id="energyTypeGroup" class="w-full sm:w-auto hidden">
-          <label for="energyType" class="block text-sm font-medium mb-1">Select Energy Source:</label>
-          <select id="energyType" class="p-2 border rounded w-full sm:w-48">
-            <option value="solar">Solar</option>
-            <option value="wind">Wind</option>
-            <option value="hydro">Hydro</option>
-            <option value="bio">Biomass</option>
-            <option value="geo">Geothermal</option>
-          </select>
-        </div>
+      <!-- Map Section -->
+      <div class="bg-white rounded-xl p-4 shadow-sm col-span-1 xl:col-span-1">
+        <div id="map" class="w-full h-[480px] border rounded-xl"></div>
       </div>
 
-      <!-- Charts Section -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 flex-grow">
-        <!-- Chart 1 -->
-        <div class="bg-white rounded-xl shadow-md p-3 flex flex-col">
+      <!-- Charts -->
+      <div class="grid grid-cols-2 gap-4 w-full">
+        <div class="bg-white rounded-xl p-3 shadow">
           <h2 class="text-md font-semibold mb-2">Energy Production vs Consumption</h2>
-          <canvas id="chartProductionConsumption" class="w-full h-full"></canvas>
+          <canvas id="chartProductionConsumption"></canvas>
         </div>
-
-        <!-- Chart 2 -->
-        <div class="bg-white rounded-xl shadow-md p-3 flex flex-col">
+        <div class="bg-white rounded-xl p-3 shadow">
           <h2 class="text-md font-semibold mb-2">Self-Sufficiency Over Time</h2>
-          <canvas id="chartProductionConsumption" class="w-full h-full"></canvas>
+          <canvas id="chartSelfSufficiency"></canvas>
         </div>
-
-        <!-- Chart 3 -->
-        <div class="bg-white rounded-xl shadow-md p-3 flex flex-col">
+        <div class="bg-white rounded-xl p-3 shadow">
           <h2 class="text-md font-semibold mb-2">Future Energy Forecast</h2>
-          <canvas id="chartProductionConsumption" class="w-full h-full"></canvas>
+          <canvas id="chartFutureForecast"></canvas>
         </div>
-
-        <!-- Chart 4 -->
-        <div class="bg-white rounded-xl shadow-md p-3 flex flex-col">
+        <div class="bg-white rounded-xl p-3 shadow">
           <h2 class="text-md font-semibold mb-2">Energy Type Distribution</h2>
-          <canvas id="chartProductionConsumption" class="w-full h-full"></canvas>
+          <canvas id="chartEnergyTypeDistribution"></canvas>
         </div>
       </div>
+
     </div>
   </div>
 </section>
 
-<!-- Chart.js CDN -->
+<!-- Chart.js + JS Files -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{{ url_for('static', filename='js/chart_controls.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dashboard_map.js') }}"></script>
-
 {% endblock %}

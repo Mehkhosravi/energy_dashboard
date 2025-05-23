@@ -297,8 +297,16 @@ def get_chart_data_time(data_type, comune):
             "commercial": get_commercial_consumption,
             "agricultural": get_agricultural_consumption
         }.items():
-            dfs = [func(code) for code in comuni_codes if code.isdigit()]
-            df = pd.concat(dfs) if dfs else pd.DataFrame()
+            dfs = []
+            for code in comuni_codes:
+                try:
+                    df_single = func(code)
+                    if isinstance(df_single, pd.DataFrame):
+                        dfs.append(df_single)
+                except Exception as e:
+                    print(f"[WARNING] Skipping {code} due to error: {e}")
+
+            df = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
             df_filtered = apply_filters(df, filters)
 
             result[name] = df_filtered["value"].tolist() if "value" in df_filtered else []
@@ -316,15 +324,25 @@ def get_chart_data_time(data_type, comune):
             "wind": get_wind_production,
             "biomass": get_bio_production
         }
+
         if source in func_map:
-            dfs = [func_map[source](code) for code in comuni_codes if code.isdigit()]
-            df = pd.concat(dfs) if dfs else pd.DataFrame()
+            dfs = []
+            for code in comuni_codes:
+                try:
+                    df_single = func_map[source](code)
+                    if isinstance(df_single, pd.DataFrame):
+                        dfs.append(df_single)
+                except Exception as e:
+                    print(f"[WARNING] Skipping {code} for production due to error: {e}")
+
+            df = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
             df_filtered = apply_filters(df, filters)
 
             return jsonify({
                 "months": df_filtered["month"].tolist() if "month" in df_filtered else [],
                 "production": df_filtered["value"].tolist() if "value" in df_filtered else []
             })
+
 
     # ========== FUTURE PRODUCTION ==========
     elif data_type == "future":
@@ -333,15 +351,25 @@ def get_chart_data_time(data_type, comune):
             "wind_v52": get_future_wind_v52,
             "wind_v80": get_future_wind_v80
         }
+
         if source in func_map:
-            dfs = [func_map[source](code) for code in comuni_codes if code.isdigit()]
-            df = pd.concat(dfs) if dfs else pd.DataFrame()
+            dfs = []
+            for code in comuni_codes:
+                try:
+                    df_single = func_map[source](code)
+                    if isinstance(df_single, pd.DataFrame):
+                        dfs.append(df_single)
+                except Exception as e:
+                    print(f"[WARNING] Skipping {code} for future production due to error: {e}")
+
+            df = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
             df_filtered = apply_filters(df, filters)
 
             return jsonify({
                 "months": df_filtered["month"].tolist() if "month" in df_filtered else [],
                 "future": df_filtered["value"].tolist() if "value" in df_filtered else []
             })
+
 
     return jsonify({})
 

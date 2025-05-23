@@ -8,44 +8,52 @@
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Font Awesome for icons -->
+  <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <!-- Select2 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+  <!-- Your custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
+  <!-- Choices.js CSS and JS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
+  <!-- virtual-select.js CSS and JS -->
+  <link href="https://cdn.jsdelivr.net/npm/virtual-select@latest/dist/virtual-select.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/virtual-select@latest/dist/virtual-select.min.js"></script>
+
 </head>
 
-<body class="bg-white text-gray-900">
-  <div class="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
-    
-    <!-- Header -->
-    {% include "partials/header.html" %}
+<body class="bg-white text-gray-900 flex flex-col min-h-screen">
 
-    <!-- Main Content -->
-    <main class="min-h-screen pt-6 px-4">
+  <!-- Header -->
+  <header class="custom-header">
+  {% include "partials/header.html" %}
+  </header>
+
+  <!-- Page Content -->
+  <main>
+    <div class="px-4 sm:px-6 lg:px-8">
       {% block content %}{% endblock %}
-    </main>
+    </div>
+  </main>
 
-    <!-- Footer -->
+  <!-- Footer -->
+  <footer>
     {% include "partials/footer.html" %}
+  </footer>
 
-  </div>
-
-  <!-- Leaflet JS (must be loaded before any map logic) -->
+  <!-- JS Libraries -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <!-- jQuery (required by Select2) -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <!-- Select2 JS -->
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
-
-  <!-- Placeholder for custom page-specific scripts -->
   {% block scripts %}{% endblock %}
 </body>
-</html>
-
 </html>

@@ -1,81 +1,76 @@
-<div id="chart-controls" class="max-w-6xl mx-auto mb-8">
-  <!-- Data Type Selector -->
-  <div class="mb-4">
-    <label for="dataType" class="block text-sm font-medium text-gray-700 mb-1">Select Data Type:</label>
+<!-- chart_controls.html -->
+<div id="chart-controls" class="space-y-4">
+
+  <!-- Select Data Type -->
+  <div>
+    <label for="dataType" class="block text-sm font-medium text-gray-700">Select Data Type:</label>
     <select id="dataType" class="w-full p-2 border rounded">
       <option value="consumption">Consumption</option>
       <option value="production">Production</option>
       <option value="future">Future Production</option>
     </select>
   </div>
-
-  <!-- Energy Source Selector (only visible for production/future) -->
-  <div class="mb-4 hidden" id="energyTypeGroup">
-    <label for="energyType" class="block text-sm font-medium text-gray-700 mb-1">Select Energy Source:</label>
+  <div id="energyTypeGroup" class="hidden">
+    <label for="energyType" class="block text-sm font-medium text-gray-700">Select Energy Source:</label>
     <select id="energyType" class="w-full p-2 border rounded">
       <option value="solar">Solar</option>
       <option value="hydro">Hydroelectric</option>
-      <option value="wind">Wind Turbine</option>
+      <option value="wind">Wind</option>
       <option value="biomass">Biomass</option>
     </select>
   </div>
-</div>
 
-<div class="text-center my-6 space-x-4">
-  <button id="downloadChart" class="bg-blue-500 text-white px-4 py-2 rounded shadow hover:bg-blue-600">Download Chart</button>
-  <button id="downloadMap" class="bg-green-500 text-white px-4 py-2 rounded shadow hover:bg-green-600">Download Map</button>
-</div>
-
-<!-- Filter Panel -->
-  <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
-    <div>
-      <label for="yearSelect">Year(s):</label>
-      <select id="yearSelect" class="w-full p-2 border rounded" multiple>
-        <option value="2022">2022</option>
-        <option value="2023">2023</option>
-        <option value="2024">2024</option>
-      </select>
-    </div>
-    <div>
-      <label for="monthSelect">Month(s):</label>
-      <select id="monthSelect" class="w-full p-2 border rounded" multiple>
-        <option value="jan">Jan</option>
-        <option value="feb">Feb</option>
-        <option value="mar">Mar</option>
-        <option value="apr">Apr</option>
-        <option value="may">May</option>
-        <option value="jun">Jun</option>
-        <option value="jul">Jul</option>
-        <option value="aug">Aug</option>
-        <option value="sep">Sep</option>
-        <option value="oct">Oct</option>
-        <option value="nov">Nov</option>
-        <option value="dec">Dec</option>
-      </select>
-    </div>
-    <div>
-      <label for="seasonSelect">Season:</label>
-      <select id="seasonSelect" class="w-full p-2 border rounded">
-        <option value="">All</option>
-        <option value="warm">Warm (Apr–Sep)</option>
-        <option value="cold">Cold (Oct–Mar)</option>
-      </select>
-    </div>
-    <div>
-      <label for="dayTypeSelect">Day Type:</label>
-      <select id="dayTypeSelect" class="w-full p-2 border rounded">
-        <option value="">All</option>
-        <option value="weekday">Weekday</option>
-        <option value="weekend">Weekend</option>
-      </select>
-    </div>
-    <div class="col-span-2">
-      <label>Hour Range:</label>
-      <div class="flex space-x-2">
-        <input type="number" id="hourStart" class="w-1/2 p-2 border rounded" placeholder="From (e.g. 6)" min="0" max="23" />
-        <input type="number" id="hourEnd" class="w-1/2 p-2 border rounded" placeholder="To (e.g. 18)" min="0" max="23" />
-      </div>
-    </div>
+  <!-- Year(s) -->
+  <div>
+    <label for="yearSelect" class="block text-sm font-medium text-gray-700">Year(s):</label>
+    <div id="yearSelect"></div>
   </div>
 
+
+  <!-- Month(s) -->
+  <div>
+    <label for="monthSelect" class="block text-sm font-medium text-gray-700">Month(s):</label>
+    <select id="monthSelect" multiple>
+    <option value="jan">January</option>
+    <option value="feb">February</option>
+    <option value="mar">March</option>
+    <option value="apr">April</option>
+    <option value="may">May</option>
+    <option value="jun">June</option>
+    <option value="jul">July</option>
+    <option value="aug">August</option>
+    <option value="sep">September</option>
+    <option value="oct">October</option>
+    <option value="nov">November</option>
+    <option value="dec">December</option>
+  </select>
+
+  </div>
+
+  <!-- Season(s) -->
+  <div>
+    <label for="seasonSelect" class="block text-sm font-medium text-gray-700">Season(s):</label>
+    <select id="seasonSelect" class="w-full p-2 border rounded" multiple>
+      <option value="warm">Warm (Apr–Sep)</option>
+      <option value="cold">Cold (Oct–Mar)</option>
+    </select>
+  </div>
+
+  <!-- Day Type -->
+  <div>
+    <label for="dayTypeSelect" class="block text-sm font-medium text-gray-700">Day Type:</label>
+    <select id="dayTypeSelect" class="select2 w-full p-2 border rounded" multiple>
+      <option value="weekday">Weekday</option>
+      <option value="weekend">Weekend</option>
+    </select>
+  </div>
+
+  <!-- Hour Range -->
+  <div>
+    <label class="block text-sm font-medium text-gray-700">Hour Range:</label>
+    <div class="flex space-x-2">
+      <input type="number" id="hourStart" class="w-full p-2 border rounded" placeholder="From (e.g. 6)" min="0" max="23" />
+      <input type="number" id="hourEnd" class="w-full p-2 border rounded" placeholder="To (e.g. 18)" min="0" max="23" />
+    </div>
+  </div>
 </div>
