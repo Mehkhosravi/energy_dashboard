@@ -5,29 +5,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const timeFilter = document.getElementById("timeFilter");
   const monthGroup = document.getElementById("monthSelectorGroup");
   const seasonGroup = document.getElementById("seasonSelectorGroup");
-
-  // Initialize Choices.js for monthSelect
+  const selectedComune = document.getElementById("selectedComune")?.value;
+  const yearSelect = document.getElementById("yearSelect");
   const monthSelect = document.getElementById("monthSelect");
-  if (monthSelect) {
-    new Choices(monthSelect, {
-      removeItemButton: true,
-      shouldSort: false,
-      placeholder: true,
-      placeholderValue: 'Select months'
-    });
-  }
-
-  // Initialize Virtual Select for yearSelect
-  VirtualSelect.init({
-    ele: '#yearSelect',
-    multiple: true,
-    search: true,
-    placeholder: 'Select year(s)',
-    options: Array.from({ length: 51 }, (_, i) => {
-      const year = 2000 + i;
-      return { label: `${year}`, value: `${year}` };
-    })
-  });
+  const seasonSelect = document.getElementById("seasonSelect");
+  const dayTypeSelect = document.getElementById("dayTypeSelect");
+  const hourStart = document.getElementById("hourStart");
+  const hourEnd = document.getElementById("hourEnd");
+  const html2canvas = window.html2canvas;
 
   if (dataTypeSelect) {
     dataTypeSelect.addEventListener("change", () => {
@@ -105,8 +90,9 @@ function updateChartWithFilters() {
   const energyType = document.getElementById("energyType")?.value;
 
   const yearSelectEl = document.getElementById("yearSelect");
-  const years = yearSelectEl?.virtualSelect?.selectedValues || [];
-  const months = Array.from(document.querySelectorAll("#monthSelect option:checked")).map(opt => opt.value);
+  const years = Array.from(yearSelectEl.selectedOptions).map(opt => opt.value);
+  const months = Array.from(document.getElementById("monthSelect").selectedOptions).map(opt => opt.value);
+  // const months = Array.from(document.querySelectorAll("#monthSelect option:checked")).map(opt => opt.value);
   const seasons = Array.from(document.querySelectorAll("#seasonSelect option:checked")).map(opt => opt.value);
   const days = Array.from(document.querySelectorAll("#dayTypeSelect option:checked")).map(opt => opt.value);
 
@@ -228,28 +214,3 @@ function updateCharts(data) {
     options: commonOptions
   });
 }
-
-document.addEventListener("DOMContentLoaded", () => {
-  const monthSelect = document.getElementById("monthSelect");
-  if (monthSelect) {
-    new Choices(monthSelect, {
-      removeItemButton: true,
-      shouldSort: false,
-      placeholder: true,
-      placeholderValue: 'Select months'
-    });
-  }
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-  VirtualSelect.init({
-    ele: '#yearSelect',
-    multiple: true,
-    search: true,
-    placeholder: 'Select year(s)',
-    options: Array.from({ length: 51 }, (_, i) => {
-      const year = 2000 + i;
-      return { label: `${year}`, value: `${year}` };
-    })
-  });
-});
