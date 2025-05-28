@@ -21,15 +21,32 @@
   </div>
 
   <!-- Year(s) -->
-  <div class="flex items-center space-x-2">
-    <label for="yearSelect" class="text-sm font-medium text-gray-700 whitespace-nowrap">Year(s):</label>
-    <select id="yearSelect" multiple class="virtual-select w-full"></select>
+  <div>
+    <label for="yearSelect" class="block text-sm font-medium text-gray-700">Year(s):</label>
+    <select id="yearSelect" multiple class="w-full p-2 border rounded">
+      {% for year in range(2000, 2051) %}
+        <option value="{{ year }}" {% if year == 2025 %}selected{% endif %}>{{ year }}</option>
+      {% endfor %}
+    </select>
   </div>
 
   <!-- Month(s) -->
-  <div class="flex items-center space-x-2">
-    <label for="monthSelect" class="text-sm font-medium text-gray-700 whitespace-nowrap">Month(s):</label>
-    <select id="monthSelect" multiple class="virtual-select w-full"></select>
+  <div>
+    <label for="monthSelect" class="block text-sm font-medium text-gray-700">Month(s):</label>
+    <select id="monthSelect" multiple class="w-full p-2 border rounded">
+      <option value="jan">January</option>
+      <option value="feb">February</option>
+      <option value="mar">March</option>
+      <option value="apr">April</option>
+      <option value="may">May</option>
+      <option value="jun">June</option>
+      <option value="jul">July</option>
+      <option value="aug">August</option>
+      <option value="sep">September</option>
+      <option value="oct">October</option>
+      <option value="nov">November</option>
+      <option value="dec">December</option>
+    </select>
   </div>
 
 
