@@ -4,6 +4,8 @@ import psycopg
 from psycopg.rows import dict_row
 from fastapi import Query  
 
+from db import get_connection  
+
 # CORS -backend and Frontend origins-
 CORS_ORIGIN = ["http://localhost:3000", "http://localhost:5173"]
 
@@ -18,13 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# change the password place after testing
-password = "profghadri"
-DB_DSN = "postgresql://postgres:profghadri@localhost:5432/energy_data"
 
-
-def get_connection():
-    return psycopg.connect(DB_DSN)
 
 
 @app.get("/")
@@ -352,42 +348,9 @@ def fetch_rows(query: str, params: tuple):
         raise HTTPException(status_code=500, detail=f"Database error: {e.pgerror}")
 
 
-# /production/monthly/solar/{prov_cod}
-# /production/monthly/wind/{prov_cod}
-# ... (all types)
-@app.get("/production/monthly/{energy_type}/{prov_cod}")
-def get_production_monthly_by_type(
-    energy_type: str,
-    prov_cod: int,
-):
-    if energy_type not in ALLOWED_ENERGY_TYPES:
-        raise HTTPException(status_code=400, detail="Invalid energy type")
-
-    query = """
-        SELECT *
-        FROM province_production_monthly
-        WHERE prov_cod = %s
-          AND energy_type = %s::energy_type
-    """
-    rows = fetch_rows(query, (prov_cod, energy_type))
-    if not rows:
-        raise HTTPException(status_code=404, detail="No data found")
-
-    return rows[0]  # one row per energy_type
 
 
-@app.get("/production/monthly/{prov_cod}")
-def get_production_monthly_all_types(
-    prov_cod: int,
-):
-    query = """
-        SELECT *
-        FROM province_production_monthly
-        WHERE prov_cod = %s
-        ORDER BY energy_type
-    """
-    rows = fetch_rows(query, (prov_cod,))
-    if not rows:
-        raise HTTPException(status_code=404, detail="No data found")
-    return rows
 
+# Register routers
+app.include_router(consumption.router)
+app.include_router(production.router)
