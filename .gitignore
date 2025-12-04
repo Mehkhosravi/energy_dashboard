@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Node / React
 node_modules/
 frontend-toolbox/node_modules/
@@ -17,3 +18,29 @@ backend/*.pyc
 Thumbs.db
 .vscode/
 .idea/
+=======
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+>>>>>>> 31be68238c768d23869ad0f729f18708f6652985
