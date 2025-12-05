@@ -1,5 +1,7 @@
 // src/components/SidePanel.tsx
 import { type ReactNode } from "react";
+import LayersFiltersPanel from "./LayersFilterPanel";
+
 
 type SidePanelProps = {
   onClose: () => void;
@@ -15,7 +17,7 @@ export default function SidePanel({ onClose, children }: SidePanelProps) {
           ✕
         </button>
       </div>
-      <div className="side-body">{children}</div>
+      <LayersFiltersPanel />
     </aside>
   );
 }
