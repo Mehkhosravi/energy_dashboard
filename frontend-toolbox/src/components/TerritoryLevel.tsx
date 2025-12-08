@@ -25,22 +25,37 @@ import rawData from "../data/territory_index.json";
 export const TERRITORIES: Territory[] = rawData as Territory[];
 
 // Helper to make search case-insensitive and accent-insensitive
-function normalizeForSearch(value: string): string {
+function normalize(value: string) {
   return value
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // strip accents
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 }
 
-// Main search function
+// Search territories by name, returning those that match the query.
+// Matches that start with the query come first, then others.
+// Limit the number of results returned (default 8).
 export function searchTerritories(
   query: string,
   limit = 8
 ): Territory[] {
-  const q = normalizeForSearch(query.trim());
+  const q = normalize(query.trim());
   if (!q) return [];
 
-  return TERRITORIES.filter((t) =>
-    normalizeForSearch(t.name).includes(q)
-  ).slice(0, limit);
+  const matches = TERRITORIES.map((t) => {
+    const normName = normalize(t.name);
+    const starts = normName.startsWith(q);
+    const contains = !starts && normName.includes(q);
+    return { territory: t, starts, contains };
+  }).filter((m) => m.starts || m.contains);
+
+  // sort: prefix matches first, then others alphabetically
+  matches.sort((a, b) => {
+    if (a.starts !== b.starts) {
+      return a.starts ? -1 : 1; // true (startsWith) comes first
+    }
+    return a.territory.name.localeCompare(b.territory.name, "it");
+  });
+
+  return matches.slice(0, limit).map((m) => m.territory);
 }
