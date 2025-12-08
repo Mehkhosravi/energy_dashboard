@@ -66,3 +66,26 @@ def get_production_monthly_all_types(
     if not rows:
         raise HTTPException(status_code=404, detail="No data found")
     return rows
+
+
+# ---------- Daily PRODUCTION ---------- 
+@router.get("/province/daily")
+def get_all_daily():
+    query = "SELECT * FROM province_daily_consumption"
+    return fetch_rows(query)
+
+
+@router.get("/province/daily/{prov_cod}")
+def get_daily_by_province(prov_cod: int):
+    query = """
+        SELECT *
+        FROM province_daily_consumption
+        WHERE prov_cod = %s
+    """
+    row = fetch_one(query, (prov_cod,))
+    if row is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Daily production not found",
+        )
+    return row

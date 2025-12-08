@@ -6,6 +6,9 @@ import {
   type Territory,
 } from "./TerritoryLevel";
 
+import { useSelectedProvince } from "./contexts/SelectedProvinceContext";
+
+
 type MapShellProps = {
   map: ReactNode;
   onTogglePanel: () => void;
@@ -21,6 +24,7 @@ export default function MapShell({
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState<Territory[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const { selectedProvince, setSelectedProvince } = useSelectedProvince();
 
   const handleSearchChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -35,6 +39,20 @@ export default function MapShell({
     setSearchTerm(territory.name);
     setShowResults(false);
     onTerritorySelected?.(territory);
+    // If a province is selected, update the context
+    // fix the  province type to match whole context
+    // CONS_ANNO is hardcoded for now
+    //only for province level
+    if (territory.level === "province") {
+      const province = {
+        "DEN_UTS": territory.name,
+        "COD_PROV": territory.prov_cod ?? 0,
+        "CONS_ANNO": 2028
+      };
+      setSelectedProvince(province);
+    } else {
+      setSelectedProvince(null);
+    }
   };
 
   const handleBlur = () => {
