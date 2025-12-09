@@ -341,7 +341,11 @@ body {
 
 .chart-container {
   width: 100%;
-  height: 500px;
+  height: auto; /* allow height to adjust based on content */
+  display: flex;
+  flex-direction: column;
+  gap: 24px; /* spacing between stacked charts */
+  padding-bottom: 10px; /* nice breathing room */
 }
 
 /* Right side: insight / text box */

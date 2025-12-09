@@ -1,6 +1,6 @@
 // src/components/ProvinceProductionMonthlyChart.tsx
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   ComposedChart,
   Bar,
@@ -13,344 +13,30 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
-import { useSelectedProvince } from "../contexts/SelectedProvinceContext";
-import { api } from "../../api/client";
+import type { CombinedChartPoint } from "../../hooks/useMonthlyData";
 
-type EnergyType = "solar" | "wind" | "hydroelectric" | "geothermal" | "biomass";
-
-type MonthKey =
-  | "jan"
-  | "feb"
-  | "mar"
-  | "apr"
-  | "may"
-  | "jun"
-  | "jul"
-  | "aug"
-  | "sep"
-  | "oct"
-  | "nov"
-  | "dec";
-
-interface ProductionApiRow {
-  prov_cod: number;
-  prov_name: string;
-  energy_type: EnergyType;
-  year?: number;
-  annual: number;
-  jan: number;
-  feb: number;
-  mar: number;
-  apr: number;
-  may: number;
-  jun: number;
-  jul: number;
-  aug: number;
-  sep: number;
-  oct: number;
-  nov: number;
-  dec: number;
-}
-
-interface MonthlySectorResponse {
-  prov_cod: number;
-  prov_name: string;
-  jan: number;
-  feb: number;
-  mar: number;
-  apr: number;
-  may: number;
-  jun: number;
-  jul: number;
-  aug: number;
-  sep: number;
-  oct: number;
-  nov: number;
-  dec: number;
-}
-
-type CombinedChartPoint = {
-  month: string;
-  solar: number;
-  wind: number;
-  hydroelectric: number;
-  geothermal: number;
-  biomass: number;
-  totalProduction: number;
-  residential: number;
-  primary: number;
-  secondary: number;
-  tertiary: number;
-  totalConsumption: number;
-};
-
-const MONTH_KEYS: MonthKey[] = [
-  "jan",
-  "feb",
-  "mar",
-  "apr",
-  "may",
-  "jun",
-  "jul",
-  "aug",
-  "sep",
-  "oct",
-  "nov",
-  "dec",
-];
-
-const MONTH_LABELS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
-const PRODUCTION_SCALE_FACTOR = 1_000_000;
-const CONSUMPTION_SCALE_FACTOR = 1_000_000;
 const UNIT_LABEL = "GWh";
-const API_BASE = "http://localhost:8000";
 
 function formatValueGWh(value: number): string {
   return `${value.toFixed(2)} ${UNIT_LABEL}`;
 }
 
-// Which series belong to which side of the legend
-const PRODUCTION_KEYS = [
-  "solar",
-  "wind",
-  "hydroelectric",
-  "geothermal",
-  "biomass",
-  "totalProduction",
-];
+interface MonthlyChartProps {
+  data: CombinedChartPoint[];
+  loading: boolean;
+  error: string | null;
+  provinceName?: string | null;
+  hasProvince: boolean;
+}
 
-const CONSUMPTION_KEYS = [
-  "residential",
-  "primary",
-  "secondary",
-  "tertiary",
-  "totalConsumption",
-];
-
-// Simple custom legend: production left, consumption right
-// const renderSplitLegend = (props: any) => {
-//   const { payload } = props;
-//   if (!payload || !payload.length) return null;
-
-//   const productionItems = payload.filter((item: any) =>
-//     PRODUCTION_KEYS.includes(item.dataKey)
-//   );
-//   const consumptionItems = payload.filter((item: any) =>
-//     CONSUMPTION_KEYS.includes(item.dataKey)
-//   );
-
-//   const renderItem = (entry: any) => {
-//     const isLine = entry.type === "line";
-//     return (
-//       <span
-//         key={entry.dataKey}
-//         style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
-//       >
-//         <svg width={14} height={10}>
-//           {isLine ? (
-//             <line
-//               x1={0}
-//               y1={5}
-//               x2={14}
-//               y2={5}
-//               stroke={entry.color}
-//               strokeWidth={2}
-//             />
-//           ) : (
-//             <rect x={1} y={2} width={12} height={6} fill={entry.color} />
-//           )}
-//         </svg>
-//         <span style={{ color: "#111827" }}>{entry.value}</span>
-//       </span>
-//     );
-//   };
-
-//   return (
-//     <div
-//       style={{
-//         display: "flex",
-//         justifyContent: "space-between",
-//         padding: "4px 12px 12px",
-//         fontSize: 12,
-//         flexWrap: "wrap",
-//         gap: 8,
-//       }}
-//     >
-//       {/* LEFT – Production */}
-//       <div
-//         style={{
-//           display: "flex",
-//           gap: 8,
-//           alignItems: "center",
-//           flexWrap: "wrap",
-//         }}
-//       >
-//         {productionItems.map(renderItem)}
-//       </div>
-
-//       {/* RIGHT – Consumption */}
-//       <div
-//         style={{
-//           display: "flex",
-//           gap: 8,
-//           alignItems: "center",
-//           flexWrap: "wrap",
-//         }}
-//       >
-//         {consumptionItems.map(renderItem)}
-//       </div>
-//     </div>
-//   );
-// };
-
-const MonthlyChart: React.FC = () => {
-  const { selectedProvince } = useSelectedProvince();
-  const [data, setData] = useState<CombinedChartPoint[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!selectedProvince) {
-      setData([]);
-      return;
-    }
-
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const productionRows = await api.getProvinceMonthlyProduction<
-          ProductionApiRow[]
-        >(selectedProvince.COD_PROV);
-
-        const [
-          residentialRes,
-          primaryRes,
-          secondaryRes,
-          tertiaryRes,
-          totalConsumptionRes,
-        ] = await Promise.all([
-          fetch(
-            `${API_BASE}/consumption/province/monthly/residential/${selectedProvince.COD_PROV}`
-          ),
-          fetch(
-            `${API_BASE}/consumption/province/monthly/primary/${selectedProvince.COD_PROV}`
-          ),
-          fetch(
-            `${API_BASE}/consumption/province/monthly/secondary/${selectedProvince.COD_PROV}`
-          ),
-          fetch(
-            `${API_BASE}/consumption/province/monthly/tertiary/${selectedProvince.COD_PROV}`
-          ),
-          fetch(
-            `${API_BASE}/consumption/province/monthly/total/${selectedProvince.COD_PROV}`
-          ),
-        ]);
-
-        if (
-          !residentialRes.ok ||
-          !primaryRes.ok ||
-          !secondaryRes.ok ||
-          !tertiaryRes.ok
-        ) {
-          throw new Error("One of the consumption API calls failed");
-        }
-
-        const residential: MonthlySectorResponse = await residentialRes.json();
-        const primary: MonthlySectorResponse = await primaryRes.json();
-        const secondary: MonthlySectorResponse = await secondaryRes.json();
-        const tertiary: MonthlySectorResponse = await tertiaryRes.json();
-        const totalConsumption: MonthlySectorResponse =
-          await totalConsumptionRes.json();
-
-        const chartData: CombinedChartPoint[] = MONTH_LABELS.map((label) => ({
-          month: label,
-          solar: 0,
-          wind: 0,
-          hydroelectric: 0,
-          geothermal: 0,
-          biomass: 0,
-          totalProduction: 0,
-          residential: 0,
-          primary: 0,
-          secondary: 0,
-          tertiary: 0,
-          totalConsumption: 0,
-        }));
-
-        // fill production (by type)
-        productionRows.forEach((row) => {
-          const energyType = row.energy_type;
-          MONTH_KEYS.forEach((monthKey, idx) => {
-            const raw = row[monthKey] ?? 0;
-            const valueGWh = raw / PRODUCTION_SCALE_FACTOR;
-            chartData[idx][energyType] = valueGWh;
-          });
-        });
-
-        // compute total production
-        chartData.forEach((p) => {
-          p.totalProduction =
-            p.solar + p.wind + p.hydroelectric + p.geothermal + p.biomass;
-        });
-
-        const toNumber = (v: unknown) => {
-          const n = Number(v ?? 0);
-          return Number.isFinite(n) ? n : 0;
-        };
-
-        // fill consumption (by sector + total)
-        MONTH_KEYS.forEach((monthKey, idx) => {
-          const r =
-            toNumber((residential as any)[monthKey]) /
-            CONSUMPTION_SCALE_FACTOR;
-          const pr =
-            toNumber((primary as any)[monthKey]) / CONSUMPTION_SCALE_FACTOR;
-          const s =
-            toNumber((secondary as any)[monthKey]) / CONSUMPTION_SCALE_FACTOR;
-          const t =
-            toNumber((tertiary as any)[monthKey]) / CONSUMPTION_SCALE_FACTOR;
-          const tot =
-            toNumber((totalConsumption as any)[monthKey]) /
-            CONSUMPTION_SCALE_FACTOR;
-
-          chartData[idx].residential = r;
-          chartData[idx].primary = pr;
-          chartData[idx].secondary = s;
-          chartData[idx].tertiary = t;
-          chartData[idx].totalConsumption = tot || r + pr + s + t;
-        });
-
-        setData(chartData);
-      } catch (err: any) {
-        console.error(err);
-        setError(
-          err.message || "Failed to load monthly production/consumption"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [selectedProvince]);
-
-  if (!selectedProvince) {
+const MonthlyChart: React.FC<MonthlyChartProps> = ({
+  data,
+  loading,
+  error,
+  provinceName,
+  hasProvince,
+}) => {
+  if (!hasProvince) {
     return (
       <div className="chart-placeholder">
         Select a province to see monthly production and consumption.
@@ -413,7 +99,17 @@ const MonthlyChart: React.FC = () => {
                 name as string,
               ]}
             />
-            <Legend verticalAlign="top" height={24} />
+            <Legend
+              verticalAlign="top"
+              height={24}
+              formatter={(name) =>
+                name === "totalProduction"
+                  ? "Total production"
+                  : name === "totalConsumption"
+                  ? "Total consumption"
+                  : (name as string)
+              }
+            />
             <Line
               type="monotone"
               dataKey="totalProduction"
@@ -456,13 +152,7 @@ const MonthlyChart: React.FC = () => {
                 name as string,
               ]}
             />
-
-            <Legend
-              verticalAlign="top"
-              align="center"
-              height={80}
-              //content={renderSplitLegend}
-            />
+            <Legend verticalAlign="top" align="center" height={80} />
 
             {/* STACKED Bar – production */}
             <Bar
@@ -506,12 +196,12 @@ const MonthlyChart: React.FC = () => {
               barSize={20}
             />
 
-            {/* Solid sector lines – consumption */}
+            {/* Sector lines – consumption */}
             <Line
               type="monotone"
               dataKey="residential"
               name="Residential consumption"
-              stroke="#f7d22dff"
+              stroke="#f7d22d"
               strokeWidth={2}
               dot={{ r: 2 }}
               legendType="line"
