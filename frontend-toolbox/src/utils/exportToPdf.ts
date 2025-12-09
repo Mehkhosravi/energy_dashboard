@@ -1,37 +1,67 @@
+// src/utils/exportToPdf.ts
 import jsPDF from "jspdf";
+import type { ExportedImage } from "./exportToImage";
 
-export function createPdfPage({
-  header,
-  footer,
-  images
-}: {
+export function createPdfWithImages(options: {
   header: string;
   footer: string;
-  images: { label: string; dataUrl: string }[];
+  images: ExportedImage[];
 }) {
-  const pdf = new jsPDF({ unit: "px", format: "a4" });
+  const { header, footer, images } = options;
 
-  // Header
-  pdf.setFontSize(18);
-  pdf.text(header, 20, 30);
-
-  let y = 70;
-
-  images.forEach((img) => {
-    pdf.setFontSize(12);
-    pdf.text(img.label, 20, y - 10);
-    pdf.addImage(img.dataUrl, "PNG", 20, y, 380, 220);
-    y += 260;
-
-    if (y > 780) {
-      pdf.addPage();
-      y = 70;
-    }
+  const pdf = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
   });
 
-  // Footer (last page)
-  pdf.setFontSize(10);
-  pdf.text(footer, 20, 810);
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+
+  const marginX = 12;
+  const marginTop = 18;
+  const marginBottom = 14;
+
+  // First page header
+  pdf.setFontSize(16);
+  pdf.text(header, marginX, marginTop);
+
+  let y = marginTop + 10;
+
+  images.forEach((img) => {
+    const availableWidth = pageWidth - 2 * marginX;
+    const aspectRatio = img.width / img.height;
+
+    const imgWidth = availableWidth;
+    const imgHeight = imgWidth / aspectRatio;
+
+    // New page if not enough space
+    if (y + imgHeight + marginBottom > pageHeight) {
+      pdf.addPage();
+      pdf.setFontSize(14);
+      pdf.text(header, marginX, marginTop);
+      y = marginTop + 10;
+    }
+
+    pdf.setFontSize(11);
+    pdf.text(img.label, marginX, y - 3);
+
+    pdf.addImage(img.dataUrl, "PNG", marginX, y, imgWidth, imgHeight);
+
+    y += imgHeight + 10;
+  });
+
+  // Footer on every page
+  const pageCount = pdf.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    pdf.setPage(i);
+    pdf.setFontSize(9);
+    pdf.text(
+      `${footer} · Page ${i}/${pageCount}`,
+      marginX,
+      pageHeight - 6
+    );
+  }
 
   return pdf;
 }

@@ -625,3 +625,10 @@ body {
   font-size: 0.75rem;
   color: #6b7280;
 }
+
+/* Download box */
+.chart-export-block {
+  background: #ffffff;
+  padding: 8px;
+  border-radius: 8px;
+}

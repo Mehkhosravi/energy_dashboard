@@ -31,7 +31,7 @@ export default function ChartShell() {
               In GWh, for the {selectedProvince?.DEN_UTS || "selected province"}
             </span>
           </div>
-          <div className="chart-container" ref={ref => chartRefs.current["monthly"] = ref}>
+          <div className="chart-container chart-export-block" ref={(el) => {chartRefs.current["monthly production and consumption"] = el;}}>
             <MonthlyChart  
               data={data}
               loading={loading}
@@ -59,7 +59,7 @@ export default function ChartShell() {
               In GWh, for the {selectedProvince?.DEN_UTS || "selected province"}
             </span>
           </div>
-          <div className="chart-container" ref={ref => chartRefs.current["daily"] = ref}>
+          <div className="chart-container chart-export-block" ref={(el) => {chartRefs.current["daily consumption"] = el;}}>
             {consumption && production ? (
               <DailyCharts  
                 consumption={consumption}
@@ -86,7 +86,7 @@ export default function ChartShell() {
               In GWh, for the {selectedProvince?.DEN_UTS || "selected province"}
             </span>
           </div>
-          <div className="chart-container" ref={ref => chartRefs.current["winter"] = ref}>
+          <div className="chart-container chart-export-block" ref={(el) => {chartRefs.current["hourly consumption (winter)"] = el;}}>
             <WinterHourlyConsumptionChart  
               provCod="TO"
             />
