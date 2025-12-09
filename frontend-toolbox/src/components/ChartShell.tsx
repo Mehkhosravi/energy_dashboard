@@ -3,9 +3,10 @@ import MonthlyChart from "./charts/MonthlyChart";
 import { useSelectedProvince } from "./contexts/SelectedProvinceContext";
 import { useMonthlyData } from "../hooks/useMonthlyData";
 import { useDailyData } from "../hooks/useDailyData";
-import ProvinceDailyEnergyCharts from "./charts/ProvinceDailyEnergyCharts";
 import DailyCharts from "./charts/DailyChart";
 import WinterHourlyConsumptionChart from "./charts/WinterHourlyConsumptionChart";
+import { useRef } from "react";
+import DownloadReportButton from "./DownloadReportButton";
 
 export default function ChartShell() {
   const { selectedProvince } = useSelectedProvince();
@@ -17,6 +18,7 @@ export default function ChartShell() {
   const {consumption, production, dailyLoading, dailyError} = useDailyData(
     provCod
   );
+  const chartRefs = useRef<Record<string, HTMLElement | null>>({});
 
   return (
     <section className="charts">
@@ -29,8 +31,8 @@ export default function ChartShell() {
               In GWh, for the {selectedProvince?.DEN_UTS || "selected province"}
             </span>
           </div>
-          <div className="chart-container">
-            <MonthlyChart
+          <div className="chart-container" ref={ref => chartRefs.current["monthly"] = ref}>
+            <MonthlyChart  
               data={data}
               loading={loading}
               error={error}
@@ -57,9 +59,9 @@ export default function ChartShell() {
               In GWh, for the {selectedProvince?.DEN_UTS || "selected province"}
             </span>
           </div>
-          <div className="chart-container">
+          <div className="chart-container" ref={ref => chartRefs.current["daily"] = ref}>
             {consumption && production ? (
-              <DailyCharts
+              <DailyCharts  
                 consumption={consumption}
                 production={production}
               />
@@ -84,8 +86,8 @@ export default function ChartShell() {
               In GWh, for the {selectedProvince?.DEN_UTS || "selected province"}
             </span>
           </div>
-          <div className="chart-container">
-            <WinterHourlyConsumptionChart
+          <div className="chart-container" ref={ref => chartRefs.current["winter"] = ref}>
+            <WinterHourlyConsumptionChart  
               provCod="TO"
             />
             
@@ -100,6 +102,10 @@ export default function ChartShell() {
           </p>
         </div>
       </div>
+      <DownloadReportButton 
+        chartRefs={chartRefs.current}
+        provinceName="Torino"
+       />
     </section>
   );
 }
