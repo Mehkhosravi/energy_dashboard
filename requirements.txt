@@ -131,3 +131,4 @@ WTForms==3.0.1
 xxhash==3.5.0
 xyzservices==2024.9.0
 zc.lockfile==3.0.post1
+Werkzeug==0.16.1
