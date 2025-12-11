@@ -402,3 +402,13 @@ if __name__ == "__main__":
     with app.app_context():
         db.create_all()
     app.run(debug=True)
+
+
+
+# to test the react connection:
+from flask import Flask, render_template
+
+@app.route("/")
+@app.route("/<path:path>")
+def index(path=None):
+    return render_template("react_index.html")
