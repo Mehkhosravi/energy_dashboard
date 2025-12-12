@@ -110,8 +110,7 @@ export default function MapShell({
           <button className="icon-btn-sm" onClick={onTogglePanel}>
             ☰
           </button>
-          <button className="icon-btn-sm">✋</button>
-          <button className="icon-btn-sm">⬇</button>
+          <button className="btn">download map ⬇</button>
         </div>
       </div>
 
