@@ -1,19 +1,45 @@
 // src/components/MapShell.tsx
+//
+// What this component does now:
+// 1) Uses the simplified territory_index (region/province/municipality in one list)
+// 2) On selection, updates ONE single context: SelectedTerritoryContext
+//    -> This becomes the single source of truth for map + charts + side panel.
+// 3) Keeps the search UI behavior the same (type -> suggestions -> select -> close).
+//
+// Why this change:
+// - Your current code updates SelectedProvinceContext only when level === "province".
+//   That means if the user selects a region or municipality, nothing global changes,
+//   so the map/charts cannot react consistently.
+// - With SelectedTerritoryContext, every selection (region/province/municipality)
+//   produces a consistent object that downstream components can use to:
+//   - fetch the right data
+//   - zoom/highlight on the map
+//   - update charts and KPIs
+
 import { type ReactNode, useState } from "react";
-import { MapInfo } from "./MapInfo";
+import PlaceInfo from "./PlaceInfo";
+
+// New module that matches the simplified JSON format:
+// - TerritoryIndexRow has: level, name, codes{reg/prov/mun}, parent{region/province}
+// - searchTerritories() searches by name/aliases
+// - formatTerritoryMeta() prints "Province · Piemonte", etc.
 import {
   searchTerritories,
-  type Territory,
+  formatTerritoryMeta,
+  type TerritoryIndexRow,
 } from "./TerritoryLevel";
 
-import { useSelectedProvince } from "./contexts/SelectedProvinceContext";
-
+// NEW unified context: always stores the currently selected territory
+// (no matter if it's a region, province, or municipality)
+import { useSelectedTerritory } from "./contexts/SelectedTerritoryContext";
 
 type MapShellProps = {
   map: ReactNode;
   onTogglePanel: () => void;
-  // later, you can use this to zoom the map to the selected territory
-  onTerritorySelected?: (territory: Territory) => void;
+
+  // Optional callback: lets parent do extra behavior (e.g., analytics, map zoom,
+  // custom routing, etc.). We keep it, but now it receives TerritoryIndexRow.
+  onTerritorySelected?: (territory: TerritoryIndexRow) => void;
 };
 
 export default function MapShell({
@@ -21,57 +47,65 @@ export default function MapShell({
   onTogglePanel,
   onTerritorySelected,
 }: MapShellProps) {
+  // Local UI state: search string and suggestion list
+  // Keeping these local is correct: they are purely UI concerns.
   const [searchTerm, setSearchTerm] = useState("");
-  const [results, setResults] = useState<Territory[]>([]);
+  const [results, setResults] = useState<TerritoryIndexRow[]>([]);
   const [showResults, setShowResults] = useState(false);
-  const { selectedProvince, setSelectedProvince } = useSelectedProvince();
 
-  const handleSearchChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  // Global app state (single source of truth):
+  // Any component (map, charts, summary cards) can read selectedTerritory
+  // and decide what to fetch/render.
+  const { setSelectedTerritory, clearSelectedTerritory } = useSelectedTerritory();
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+
+    // Update input value immediately for responsive typing
     setSearchTerm(value);
+
+    // Search results come from the territory index:
+    // It's fast (in-memory) and gives you region/province/municipality together.
     setResults(searchTerritories(value));
+
+    // show dropdown as user types
     setShowResults(true);
+
+    // Optional behavior:
+    // if user clears the input, clear the global selected territory too,
+    // otherwise UI says "nothing selected" but app still keeps old selection.
+    if (value.trim() === "") {
+      clearSelectedTerritory();
+    }
   };
 
-  const handleSelect = (territory: Territory) => {
-    setSearchTerm(territory.name);
+  const handleSelect = (t: TerritoryIndexRow) => {
+    // 1) Set input to selected territory name
+    setSearchTerm(t.name);
+
+    // 2) Close the dropdown
     setShowResults(false);
-    onTerritorySelected?.(territory);
-    // If a province is selected, update the context
-    // fix the  province type to match whole context
-    // CONS_ANNO is hardcoded for now
-    //only for province level
-    if (territory.level === "province") {
-      const province = {
-        "DEN_UTS": territory.name,
-        "COD_PROV": territory.prov_cod ?? 0,
-        "CONS_ANNO": 2028
-      };
-      setSelectedProvince(province);
-    } else {
-      setSelectedProvince(null);
-    }
+
+    // 3) Notify parent if needed (optional)
+    onTerritorySelected?.(t);
+
+    // 4) Update the unified context
+    // Why we store the whole object:
+    // - It already contains hierarchy information (parent names)
+    // - It contains codes needed for backend queries (reg/prov/mun)
+    // - It avoids recomputing later and keeps downstream logic simple
+    setSelectedTerritory({
+      level: t.level,
+      name: t.name,
+      codes: t.codes,
+      parent: t.parent,
+    });
   };
 
   const handleBlur = () => {
-    // small delay so click on item still works
+    // Small delay so a click on a suggestion still registers
+    // (because blur happens before onMouseDown finishes)
     setTimeout(() => setShowResults(false), 150);
-  };
-
-  const formatMeta = (t: Territory): string => {
-    if (t.level === "region") {
-      return "Region";
-    }
-    if (t.level === "province") {
-      return `Province · ${t.region}`;
-    }
-    // municipality
-    if (t.province) {
-      return `Municipality · ${t.province}, ${t.region}`;
-    }
-    return `Municipality · ${t.region}`;
   };
 
   return (
@@ -94,11 +128,19 @@ export default function MapShell({
                 <li
                   key={t.id}
                   className="search-suggestion-item"
+                  // onMouseDown (not onClick) avoids losing selection due to blur
                   onMouseDown={() => handleSelect(t)}
                 >
                   <span className="suggestion-name">{t.name}</span>
+
+                  {/* Meta uses hierarchy:
+                      - Region -> "Region"
+                      - Province -> "Province · <Region>"
+                      - Municipality -> "Municipality · <Province>, <Region>"
+                      This comes from TerritoryIndex.formatTerritoryMeta()
+                   */}
                   <span className="suggestion-meta">
-                    {formatMeta(t)}
+                    {formatTerritoryMeta(t)}
                   </span>
                 </li>
               ))}
@@ -116,7 +158,7 @@ export default function MapShell({
 
       <div className="map-main">
         <div className="map-view">{map}</div>
-        <MapInfo />
+        <PlaceInfo />
       </div>
     </section>
   );

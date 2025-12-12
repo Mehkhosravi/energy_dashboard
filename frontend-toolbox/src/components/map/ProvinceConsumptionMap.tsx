@@ -1,28 +1,39 @@
+// src/components/maps/ProvinceConsumptionMap.tsx
+
 import { useEffect, useRef, useState, useMemo } from "react";
 import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
 import type { Map as LeafletMap } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import Legend from "../Legend";
-import { useSelectedProvince } from "../contexts/SelectedProvinceContext";
-import type { Province } from "../contexts/Types";
+import { useSelectedTerritory } from "../contexts/SelectedTerritoryContext";
 import type { Feature, Geometry } from "geojson";
+
+// Minimal province properties used from GeoJSON
+type ProvinceProps = {
+  DEN_UTS?: string;     // Province name
+  COD_PROV: number;    // Province code
+  CONS_ANNO?: number;  // Consumption value
+};
 
 export default function ProvinceConsumptionMap() {
   const [geo, setGeo] = useState<any | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
-  const { selectedProvince, setSelectedProvince } = useSelectedProvince();
 
+  // Unified global selection
+  const { selectedTerritory, setSelectedTerritory } = useSelectedTerritory();
+
+  // Load province GeoJSON once
   useEffect(() => {
     fetch("/data/prov_cons_ann.geojson")
       .then((res) => res.json())
-      .then((data) => setGeo(data))
+      .then(setGeo)
       .catch((err) => {
         console.error("Error loading GeoJSON", err);
         setGeo(null);
       });
   }, []);
 
-  // --- values from geo (always call this hook, even if geo is null) ---
+  // Values used to compute choropleth classes
   const values: number[] = useMemo(() => {
     if (!geo) return [];
     return geo.features
@@ -30,25 +41,22 @@ export default function ProvinceConsumptionMap() {
       .filter((v: number) => typeof v === "number" && !Number.isNaN(v));
   }, [geo]);
 
-    const { breaks, colors } = useMemo(() => {
-  // Yellow → Red choropleth (YlOrRd style)
+  // Class breaks + colors
+  const { breaks, colors } = useMemo(() => {
     const palette = [
-      "#FFFFB2", // pale yellow (lowest)
-      "#FECC5C", // light yellow-orange
-      "#FD8D3C", // orange
-      "#F03B20", // strong orange-red
-      "#BD0026", // deep red
-      "#800026", // darkest red (highest)
+      "#FFFFB2",
+      "#FECC5C",
+      "#FD8D3C",
+      "#F03B20",
+      "#BD0026",
+      "#800026",
     ];
 
-
-    if (values.length === 0) {
-      return { breaks: [], colors: palette };
-    }
+    if (values.length === 0) return { breaks: [], colors: palette };
 
     const sorted = [...values].sort((a, b) => a - b);
-    const n = sorted.length || 1;
-    const numClasses = palette.length; // 6 classes
+    const n = sorted.length;
+    const numClasses = palette.length;
 
     const b: number[] = [];
     for (let i = 0; i <= numClasses; i++) {
@@ -66,7 +74,6 @@ export default function ProvinceConsumptionMap() {
       const from = breaks[i];
       const to = breaks[i + 1];
 
-      // Include upper bound in last class
       if (i === breaks.length - 2) {
         if (v >= from && v <= to) return colors[i];
       } else if (v >= from && v < to) {
@@ -76,25 +83,32 @@ export default function ProvinceConsumptionMap() {
     return colors[colors.length - 1];
   };
 
+  // Style per province
   const style = (feature: any) => {
-    const cons_val = feature?.properties?.CONS_ANNO as number;
+    const props = feature.properties as ProvinceProps;
 
     const isSelected =
-      selectedProvince &&
-      feature.properties.COD_PROV === selectedProvince.COD_PROV;
+      selectedTerritory?.level === "province" &&
+      selectedTerritory.codes.prov === props.COD_PROV;
 
     return {
       color: isSelected ? "#000" : "#333",
       weight: isSelected ? 3 : 1,
       fillOpacity: isSelected ? 0.9 : 0.7,
-      fillColor: getColor(cons_val),
+      fillColor: getColor(props.CONS_ANNO ?? 0),
     };
   };
 
-  const onEachFeature = (feature: Feature<Geometry, Province>, layer: any) => {
-    const name = feature?.properties?.DEN_UTS ?? "";
+  // Per-feature logic
+  const onEachFeature = (
+    feature: Feature<Geometry, ProvinceProps>,
+    layer: any
+  ) => {
+    const props = feature.properties;
+    const name = props?.DEN_UTS ?? "";
     if (!name) return;
 
+    // Province label
     layer.bindTooltip(name, {
       permanent: true,
       direction: "center",
@@ -102,20 +116,26 @@ export default function ProvinceConsumptionMap() {
     });
 
     layer.on("click", () => {
-      const props = feature.properties as Province;
-      console.log("Selected layer:", props.DEN_UTS);
-      setSelectedProvince(props);
+      // Preserve region code if already known
+      setSelectedTerritory({
+        level: "province",
+        name,
+        codes: {
+          reg: selectedTerritory?.codes.reg ?? 0,
+          prov: props.COD_PROV,
+        },
+        parent: selectedTerritory?.parent,
+      });
 
+      // Zoom to province
       if (mapRef.current) {
-        const bounds = layer.getBounds();
-        mapRef.current.fitBounds(bounds);
+        mapRef.current.fitBounds(layer.getBounds());
       }
     });
   };
 
   return (
     <div style={{ height: "100%", width: "100%", position: "relative" }}>
-      {/* Loading overlay instead of early return */}
       {!geo && (
         <div
           style={{
@@ -126,7 +146,6 @@ export default function ProvinceConsumptionMap() {
             alignItems: "center",
             justifyContent: "center",
             background: "rgba(255,255,255,0.7)",
-            fontSize: 14,
           }}
         >
           Loading…
@@ -148,7 +167,6 @@ export default function ProvinceConsumptionMap() {
           <GeoJSON data={geo} style={style} onEachFeature={onEachFeature} />
         )}
 
-        {/* Legend only if we have proper breaks */}
         {breaks.length > 1 && <Legend breaks={breaks} colors={colors} />}
       </MapContainer>
     </div>
