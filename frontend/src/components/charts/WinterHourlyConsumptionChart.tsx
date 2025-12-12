@@ -11,7 +11,7 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
-import { useHourlyData } from "../../hooks/useHourlyData";
+//import { useHourlyData } from "../../hooks/useHourlyData";
 
 interface WinterHourlyConsumptionChartProps {
   provCod: string; // e.g. from selectedProvince

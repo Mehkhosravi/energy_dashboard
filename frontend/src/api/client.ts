@@ -41,4 +41,18 @@ export const api = {
   getProvinceProductionSummaryannual: <T>(provCod: number) =>
     getJSON<T>(`/production/${provCod}`),
 
+  // NEW: monthly energy by comune (DW-based endpoint)
+  getComuneMonthlyEnergy: <T>(params: {
+    comune: string;
+    year: number;
+    domain?: "consumption" | "production";
+  }) => {
+    const domain = params.domain ?? "consumption";
+
+    return getJSON<T>(
+      `/api/energy/monthly?comune=${encodeURIComponent(
+        params.comune
+      )}&year=${params.year}&domain=${domain}`
+    );
+  },
 };
