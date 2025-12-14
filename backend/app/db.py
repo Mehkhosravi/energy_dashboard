@@ -7,22 +7,22 @@ DB_DSN = (
     f"@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
 )
 
-
 def get_connection():
     return psycopg.connect(DB_DSN)
 
+db_client = get_connection()
 
 def fetch_rows(query: str, params: tuple | None = None):
     try:
-        with get_connection() as conn:
-            with conn.cursor() as cur:
-                if params is not None:
-                    cur.execute(query, params)
-                else:
-                    cur.execute(query)
+  
+        with db_client.cursor() as cur:
+            if params is not None:
+                cur.execute(query, params)
+            else:
+                cur.execute(query)
 
-                columns = [desc[0] for desc in cur.description]
-                rows = cur.fetchall()
+            columns = [desc[0] for desc in cur.description]
+            rows = cur.fetchall()
 
         return [dict(zip(columns, row)) for row in rows]
 
