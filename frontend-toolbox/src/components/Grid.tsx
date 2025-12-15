@@ -6,47 +6,63 @@ import Toolbar from "./Toolbar";
 import SidePanel from "./SidePanel";
 import MapShell from "./MapShell";
 import ChartsShell from "./ChartShell";
-import AdminPage from "./admin/AdminPage"; // Import the AdminPage
-import DataImportPage from "./data-import/DataImportPage"; // Import Data Import page
+import AdminPanel from "./admin/AdminPanel";
+import AdminContent from "./admin/AdminContent";
 
 type GridProps = {
-  map: ReactNode;     // your Leaflet map component
-  side?: ReactNode;   // optional custom side-panel content
+  map: ReactNode;
+  side?: ReactNode;
 };
+
+type AdminSection = "account" | "upload" | "validate";
 
 export default function Grid({ map, side }: GridProps) {
   const [panelOpen, setPanelOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "admin">("dashboard"); // Manage active tab (dashboard/admin)
+
+  // NEW admin state
+  const [adminMode, setAdminMode] = useState(false);
+  const [adminSection, setAdminSection] = useState<AdminSection>("account");
 
   const togglePanel = () => setPanelOpen((v) => !v);
 
+  // Compatible with your old Grid/Header behavior
   const handleOpenAdmin = () => {
-    setActiveTab("admin");
+    setAdminMode(true);
+    setAdminSection("account"); // default landing
+  };
+
+  const handleCloseAdmin = () => {
+    setAdminMode(false);
   };
 
   return (
     <div className="page">
-      <Header onOpenAdmin={handleOpenAdmin} />  {/* Pass callback to Header for switching to Admin view */}
+      <Header onOpenAdmin={handleOpenAdmin} onCloseAdmin={handleCloseAdmin} />
 
       <div className="body">
         <Toolbar />
 
         <main className="main">
-          {panelOpen && (
-            <SidePanel onClose={togglePanel}>
-              {side ?? <p>Side panel content…</p>}
-            </SidePanel>
+          {/* LEFT PANEL */}
+          {adminMode ? (
+            <AdminPanel active={adminSection} onChange={setAdminSection} />
+          ) : (
+            panelOpen && (
+              <SidePanel onClose={togglePanel}>
+                {side ?? <p>Side panel content…</p>}
+              </SidePanel>
+            )
           )}
 
+          {/* MAIN CONTENT */}
           <section className="content">
-            {/* Render based on activeTab */}
-            {activeTab === "dashboard" ? (
+            {adminMode ? (
+              <AdminContent section={adminSection} />
+            ) : (
               <>
                 <MapShell map={map} onTogglePanel={togglePanel} />
                 <ChartsShell />
               </>
-            ) : (
-              <AdminPage />
             )}
           </section>
         </main>
