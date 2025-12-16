@@ -1,6 +1,6 @@
 // src/components/TerritoryIndex.ts
 
-export type TerritoryLevel = "region" | "province" | "municipality";
+export type TerritoryLevel = "region" | "province" | "municipality" | "comune";
 
 export type TerritoryIndexRow = {
   id: string;

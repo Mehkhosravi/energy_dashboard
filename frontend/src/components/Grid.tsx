@@ -6,35 +6,64 @@ import Toolbar from "./Toolbar";
 import SidePanel from "./SidePanel";
 import MapShell from "./MapShell";
 import ChartsShell from "./ChartShell";
+import AdminPanel from "./admin/AdminPanel";
+import AdminContent from "./admin/AdminContent";
 
 type GridProps = {
-  map: ReactNode;     // your Leaflet map component
-  side?: ReactNode;   // optional custom side-panel content
+  map: ReactNode;
+  side?: ReactNode;
 };
+
+type AdminSection = "account" | "upload" | "validate";
 
 export default function Grid({ map, side }: GridProps) {
   const [panelOpen, setPanelOpen] = useState(true);
 
+  // NEW admin state
+  const [adminMode, setAdminMode] = useState(false);
+  const [adminSection, setAdminSection] = useState<AdminSection>("account");
+
   const togglePanel = () => setPanelOpen((v) => !v);
+
+  // Compatible with your old Grid/Header behavior
+  const handleOpenAdmin = () => {
+    setAdminMode(true);
+    setAdminSection("account"); // default landing
+  };
+
+  const handleCloseAdmin = () => {
+    setAdminMode(false);
+  };
 
   return (
     <div className="page">
-      <Header />
+      <Header onOpenAdmin={handleOpenAdmin} onCloseAdmin={handleCloseAdmin} />
 
       <div className="body">
         <Toolbar />
 
         <main className="main">
-          {panelOpen && (
-            <SidePanel onClose={togglePanel}>
-              {side ?? <p>Side panel content…</p>}
-            </SidePanel>
+          {/* LEFT PANEL */}
+          {adminMode ? (
+            <AdminPanel active={adminSection} onChange={setAdminSection} />
+          ) : (
+            panelOpen && (
+              <SidePanel onClose={togglePanel}>
+                {side ?? <p>Side panel content…</p>}
+              </SidePanel>
+            )
           )}
 
+          {/* MAIN CONTENT */}
           <section className="content">
-            <MapShell map={map} onTogglePanel={togglePanel} />
-            <ChartsShell />
-
+            {adminMode ? (
+              <AdminContent section={adminSection} />
+            ) : (
+              <>
+                <MapShell map={map} onTogglePanel={togglePanel} />
+                <ChartsShell />
+              </>
+            )}
           </section>
         </main>
       </div>

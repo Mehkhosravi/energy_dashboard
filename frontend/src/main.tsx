@@ -5,11 +5,14 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { SelectedTerritoryProvider } from "./components/contexts/SelectedTerritoryContext";
+import { MapFiltersProvider } from './components/contexts/MapFiltersContext';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <SelectedTerritoryProvider>
-      <App />
+      <MapFiltersProvider>
+        <App />
+      </MapFiltersProvider>
     </SelectedTerritoryProvider>
   </React.StrictMode>
 );

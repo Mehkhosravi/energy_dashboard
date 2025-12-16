@@ -1,4 +1,6 @@
 // src/components/ProvinceProductionMonthlyChart.tsx
+// MonthlyChart.tsx
+import type { CombinedChartPoint } from "../../hooks/useProvinceMonthlyData";
 
 import React from "react";
 import {
@@ -13,7 +15,6 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
-import type { CombinedChartPoint } from "../../hooks/useMonthlyData";
 
 const UNIT_LABEL = "GWh";
 

@@ -1,7 +1,10 @@
-import "leaflet/dist/leaflet.css";
+
 import ProvinceConsumptionMap from "./components/map/ProvinceConsumptionMap";
 import Grid from "./components/Grid";
-import MunicipalityMap from "./components/map/MunicipalityMap";
+import MainMap from "./components/map/MainMap";
+import DefaultMap from "./components/map/DefaultMap";
+
+
 
 function SidePanelMock() {
   return (
@@ -11,14 +14,17 @@ function SidePanelMock() {
     </div>
   );
 }
-
+export type ProvinceProps = {
+  DEN_UTS: string;
+  COD_PROV: number;
+  CONS_ANNO: number;
+};
 function App() {
   return (
     <Grid
       side={<SidePanelMock />}
-      map={<MunicipalityMap />}
+      map={<MainMap />}
     />
   );
 }
-
 export default App;

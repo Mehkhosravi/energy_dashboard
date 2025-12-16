@@ -70,7 +70,7 @@ export const MONTHS: { key: MonthKey; label: string }[] = [
   { key: "dec", label: "Dec" },
 ];
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = "http://localhost:5000";
 
 export function useDailyData(provCod?: number | null) {
   const [consumption, setConsumption] =

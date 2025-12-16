@@ -1,93 +1,100 @@
 // src/components/MapShell.tsx
-
 import { type ReactNode, useState } from "react";
 import PlaceInfo from "./PlaceInfo";
 
-// New module that matches the simplified JSON format:
-// - TerritoryIndexRow has: level, name, codes{reg/prov/mun}, parent{region/province}
-// - searchTerritories() searches by name/aliases
-// - formatTerritoryMeta() prints "Province · Piemonte", etc.
 import {
   searchTerritories,
   formatTerritoryMeta,
   type TerritoryIndexRow,
 } from "./TerritoryLevel";
 
-// NEW unified context
 import { useSelectedTerritory } from "./contexts/SelectedTerritoryContext";
 
 type MapShellProps = {
   map: ReactNode;
   onTogglePanel: () => void;
-
-  // Optional callback: lets parent do extra behavior (e.g., analytics, map zoom,
-  // custom routing, etc.). We keep it, but now it receives TerritoryIndexRow.
   onTerritorySelected?: (territory: TerritoryIndexRow) => void;
 };
+
+// If your app uses "municipality" in the index, keep it.
+// MainMap I gave you expects "comune". If your context is still "municipality",
+// keep it here; otherwise switch to "comune".
+type AppLevel = "region" | "province" | "municipality";
+
+function normalizeLevel(level: TerritoryIndexRow["level"]): AppLevel {
+  if (level === "region") return "region";
+  if (level === "province") return "province";
+  return "municipality";
+}
+
+function toNum(x: unknown): number | null {
+  if (typeof x === "number" && Number.isFinite(x)) return x;
+  if (typeof x === "string") {
+    const n = Number(x.trim());
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
 
 export default function MapShell({
   map,
   onTogglePanel,
   onTerritorySelected,
 }: MapShellProps) {
-  // Local UI state: search string and suggestion list
-  // Keeping these local is correct: they are purely UI concerns.
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState<TerritoryIndexRow[]>([]);
   const [showResults, setShowResults] = useState(false);
 
-  // Global app state (single source of truth):
-  // Any component (map, charts, summary cards) can read selectedTerritory
-  // and decide what to fetch/render.
   const { setSelectedTerritory, clearSelectedTerritory } = useSelectedTerritory();
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-
-    // Update input value immediately for responsive typing
     setSearchTerm(value);
 
-    // Search results come from the territory index:
-    // It's fast (in-memory) and gives you region/province/municipality together.
     setResults(searchTerritories(value));
-
-    // show dropdown as user types
     setShowResults(true);
 
-    // Optional behavior:
-    // if user clears the input, clear the global selected territory too,
-    // otherwise UI says "nothing selected" but app still keeps old selection.
-    if (value.trim() === "") {
-      clearSelectedTerritory();
-    }
+    if (value.trim() === "") clearSelectedTerritory();
   };
 
   const handleSelect = (t: TerritoryIndexRow) => {
-    // 1) Set input to selected territory name
     setSearchTerm(t.name);
-
-    // 2) Close the dropdown
     setShowResults(false);
-
-    // 3) Notify parent if needed (optional)
     onTerritorySelected?.(t);
 
-    // 4) Update the unified context
-    // Why we store the whole object:
-    // - It already contains hierarchy information (parent names)
-    // - It contains codes needed for backend queries (reg/prov/mun)
-    // - It avoids recomputing later and keeps downstream logic simple
+    const lvl = normalizeLevel(t.level);
+
+    // Pull codes from the index; if missing, fall back to parent codes.
+    // IMPORTANT: reg MUST exist because your context type requires it.
+    const reg =
+      toNum(t.codes?.reg) ??
+      toNum((t.parent as any)?.codes?.reg) ?? // if your parent includes codes
+      0;
+
+    const prov =
+      toNum(t.codes?.prov) ??
+      toNum((t.parent as any)?.codes?.prov) ??
+      null;
+
+    const mun = toNum(t.codes?.mun) ?? null;
+
+    // Build codes object EXACTLY matching your context type:
+    // { reg: number; prov?: number; mun?: number }
+    const codes: { reg: number; prov?: number; mun?: number } = {
+      reg,
+      ...(lvl !== "region" && prov != null ? { prov } : {}),
+      ...(lvl === "municipality" && mun != null ? { mun } : {}),
+    };
+
     setSelectedTerritory({
-      level: t.level,
+      level: lvl,
       name: t.name,
-      codes: t.codes,
+      codes,
       parent: t.parent,
     });
   };
 
   const handleBlur = () => {
-    // Small delay so a click on a suggestion still registers
-    // (because blur happens before onMouseDown finishes)
     setTimeout(() => setShowResults(false), 150);
   };
 
@@ -111,20 +118,10 @@ export default function MapShell({
                 <li
                   key={t.id}
                   className="search-suggestion-item"
-                  // onMouseDown (not onClick) avoids losing selection due to blur
                   onMouseDown={() => handleSelect(t)}
                 >
                   <span className="suggestion-name">{t.name}</span>
-
-                  {/* Meta uses hierarchy:
-                      - Region -> "Region"
-                      - Province -> "Province · <Region>"
-                      - Municipality -> "Municipality · <Province>, <Region>"
-                      This comes from TerritoryIndex.formatTerritoryMeta()
-                   */}
-                  <span className="suggestion-meta">
-                    {formatTerritoryMeta(t)}
-                  </span>
+                  <span className="suggestion-meta">{formatTerritoryMeta(t)}</span>
                 </li>
               ))}
             </ul>

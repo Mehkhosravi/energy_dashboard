@@ -9,7 +9,9 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/api": "http://localhost:5000", // Flask API
+      "/api": "http://localhost:5000", // Flask API,
+      "/map": "http://localhost:5000",
+      "/charts": "http://localhost:5000",
     },
   },
 });

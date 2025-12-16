@@ -7,7 +7,6 @@
 // - We pass those to hooks (you will update hooks next if they only accept provCod)
 
 import { useRef } from "react";
-import MonthlyChart from "./charts/MonthlyChart";
 import DailyCharts from "./charts/DailyChart";
 import WinterHourlyConsumptionChart from "./charts/WinterHourlyConsumptionChart";
 import DownloadReportButton from "./DownloadReportButton";
@@ -16,8 +15,8 @@ import { useSelectedTerritory } from "./contexts/SelectedTerritoryContext";
 
 // NOTE: these hooks currently accept provCod only in your old code.
 // After this refactor, update them to accept (level, code) or a selector object.
-import { useMonthlyData } from "../hooks/useMonthlyData";
 import { useDailyData } from "../hooks/useDailyData";
+import ProvinceMonthlyChartContainer from "./charts/ProvinceMonthlyChartContainer";
 
 export default function ChartShell() {
   const { selectedTerritory } = useSelectedTerritory();
@@ -47,7 +46,6 @@ export default function ChartShell() {
   // If your hooks still require provCod only, we only call them when a province is selected.
   const provCod = selectedTerritory?.level === "province" ? (selectedTerritory.codes.prov ?? null) : null;
 
-  const { data, provinceName, loading, error } = useMonthlyData(provCod);
   const { consumption, production, dailyLoading, dailyError } = useDailyData(provCod);
 
   // Refs used by DownloadReportButton
@@ -87,13 +85,7 @@ export default function ChartShell() {
               chartRefs.current["monthly production and consumption"] = el;
             }}
           >
-            <MonthlyChart
-              data={data}
-              loading={loading}
-              error={error}
-              provinceName={provinceName}
-              hasProvince={selectedTerritory?.level === "province"}
-            />
+            <ProvinceMonthlyChartContainer />
           </div>
         </div>
 
@@ -138,7 +130,7 @@ export default function ChartShell() {
       </div>
 
       {/* Row 3 */}
-      <div className="chart-row">
+      {/* <div className="chart-row">
         <div className="chart-card">
           <div className="chart-header">
             <h3>Winter hourly consumption</h3>
@@ -153,7 +145,6 @@ export default function ChartShell() {
               chartRefs.current["hourly consumption (winter)"] = el;
             }}
           >
-            {/* TODO: update this chart to accept territory selector too */}
             <WinterHourlyConsumptionChart provCod="TO" />
           </div>
         </div>
@@ -165,7 +156,7 @@ export default function ChartShell() {
             less, and how this compares to total consumption.
           </p>
         </div>
-      </div>
+      </div> */}
 
       <DownloadReportButton
         chartRefs={chartRefs.current}

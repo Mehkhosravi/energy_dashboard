@@ -632,3 +632,38 @@ body {
   padding: 8px;
   border-radius: 8px;
 }
+
+/* ADMIN PANEL NAV */
+
+.admin-nav-item {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  text-align: left;
+  font-size: 13px;
+  cursor: pointer;
+  color: #111827;
+}
+
+.admin-nav-item:hover {
+  background: #f3f4f6;
+}
+
+.admin-nav-item.active {
+  background: #111827;
+  color: #f9fafb;
+}
+
+/* Keep label + select on one line in ImportContextPanel */
+.side-option--inline {
+  display: grid;
+  grid-template-columns: 120px 1fr; /* increase if you want more space */
+  align-items: center;
+  column-gap: 12px;
+}
+
+.side-option-label {
+  white-space: nowrap; /* prevents "Spatial level" from wrapping */
+}

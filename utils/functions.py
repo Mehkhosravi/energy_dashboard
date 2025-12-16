@@ -5,10 +5,7 @@ import os
 import json
 import pyproj
 from utils.db_utils import fetch_query
-from models.commune_geometry import CommuneGeometry
-from extensions import db
 import json
-from utils.db_utils import fetch_query
 
 # === Mapping & Constants ============================================
 

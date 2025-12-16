@@ -1,9 +1,6 @@
-import { useState, type ReactNode } from "react";
-
-type DataTheme = "consumption" | "production" | "future_potential";
-type SpatialScale = "region" | "province" | "municipality";
-type TemporalResolution = "annual" | "monthly" | "daily" | "hourly";
-type ConstraintOverlay = "heritage" | "air_quality" | "high_altitude";
+import { useEffect, useState, type ReactNode } from "react";
+import { useSelectedTerritory } from "./contexts/SelectedTerritoryContext";
+import { useMapFilters } from "./contexts/MapFiltersContext";
 
 type SectionProps = {
   title: string;
@@ -35,26 +32,30 @@ function Section({ title, info, defaultOpen = true, children }: SectionProps) {
 }
 
 export default function LayersFiltersPanel() {
-  // defaults:
-  // - theme: consumption
-  // - spatial level: province
-  // - time scale: annual
-  // - constraints: none
-  const [theme, setTheme] = useState<DataTheme>("consumption");
-  const [scale, setScale] = useState<SpatialScale>("province");
-  const [timeResolution, setTimeResolution] =
-    useState<TemporalResolution>("annual");
-  const [overlays, setOverlays] = useState<ConstraintOverlay[]>([]);
+  const { selectedTerritory } = useSelectedTerritory();
+  const { filters, setTheme, setScale, setTimeResolution, toggleOverlay } = useMapFilters();
 
-  const toggleOverlay = (o: ConstraintOverlay) => {
-    setOverlays((prev) =>
-      prev.includes(o) ? prev.filter((v) => v !== o) : [...prev, o]
-    );
-  };
+  // ✅ sync panel scale when search selection changes
+  useEffect(() => {
+  const nextScale =
+    selectedTerritory?.level === "region"
+      ? "region"
+      : selectedTerritory?.level === "province"
+      ? "province"
+      : selectedTerritory?.level === "municipality"
+      ? "municipality"
+      : null;
+
+  if (!nextScale) return;
+
+  // guard: do nothing if already correct
+  if (filters.scale === nextScale) return;
+
+  setScale(nextScale);
+}, [selectedTerritory?.level, filters.scale, setScale]);
 
   return (
     <div className="layers-filters-panel">
-      {/* Energy category (single select) */}
       <Section
         title="Energy category"
         info="Choose whether to analyse consumption, production or future potential."
@@ -64,7 +65,7 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="dataTheme"
-              checked={theme === "consumption"}
+              checked={filters.theme === "consumption"}
               onChange={() => setTheme("consumption")}
             />
             <span>Consumption</span>
@@ -74,7 +75,7 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="dataTheme"
-              checked={theme === "production"}
+              checked={filters.theme === "production"}
               onChange={() => setTheme("production")}
             />
             <span>Production</span>
@@ -84,7 +85,7 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="dataTheme"
-              checked={theme === "future_potential"}
+              checked={filters.theme === "future_potential"}
               onChange={() => setTheme("future_potential")}
             />
             <span>Future potential</span>
@@ -92,7 +93,6 @@ export default function LayersFiltersPanel() {
         </div>
       </Section>
 
-      {/* Spatial level */}
       <Section
         title="Spatial level"
         info="Select the territorial aggregation: region, province or municipality."
@@ -102,7 +102,7 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="scale"
-              checked={scale === "region"}
+              checked={filters.scale === "region"}
               onChange={() => setScale("region")}
             />
             <span>Region</span>
@@ -112,7 +112,7 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="scale"
-              checked={scale === "province"}
+              checked={filters.scale === "province"}
               onChange={() => setScale("province")}
             />
             <span>Province</span>
@@ -122,7 +122,7 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="scale"
-              checked={scale === "municipality"}
+              checked={filters.scale === "municipality"}
               onChange={() => setScale("municipality")}
             />
             <span>Municipality</span>
@@ -130,7 +130,6 @@ export default function LayersFiltersPanel() {
         </div>
       </Section>
 
-      {/* Time scale */}
       <Section
         title="Time scale"
         info="Control how the data is aggregated in time (annual, monthly, daily, hourly)."
@@ -140,7 +139,7 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="timeResolution"
-              checked={timeResolution === "annual"}
+              checked={filters.timeResolution === "annual"}
               onChange={() => setTimeResolution("annual")}
             />
             <span>Annual</span>
@@ -150,7 +149,7 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="timeResolution"
-              checked={timeResolution === "monthly"}
+              checked={filters.timeResolution === "monthly"}
               onChange={() => setTimeResolution("monthly")}
             />
             <span>Monthly</span>
@@ -160,7 +159,7 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="timeResolution"
-              checked={timeResolution === "daily"}
+              checked={filters.timeResolution === "daily"}
               onChange={() => setTimeResolution("daily")}
             />
             <span>Daily</span>
@@ -170,7 +169,7 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="timeResolution"
-              checked={timeResolution === "hourly"}
+              checked={filters.timeResolution === "hourly"}
               onChange={() => setTimeResolution("hourly")}
             />
             <span>Hourly</span>
@@ -178,7 +177,6 @@ export default function LayersFiltersPanel() {
         </div>
       </Section>
 
-      {/* Context & constraints */}
       <Section
         title="Context & constraints"
         info="Toggle additional map overlays that highlight constraints or sensitive areas."
@@ -187,7 +185,7 @@ export default function LayersFiltersPanel() {
           <label className="side-option">
             <input
               type="checkbox"
-              checked={overlays.includes("heritage")}
+              checked={filters.overlays.includes("heritage")}
               onChange={() => toggleOverlay("heritage")}
             />
             <span>Cultural heritage zones</span>
@@ -196,7 +194,7 @@ export default function LayersFiltersPanel() {
           <label className="side-option">
             <input
               type="checkbox"
-              checked={overlays.includes("air_quality")}
+              checked={filters.overlays.includes("air_quality")}
               onChange={() => toggleOverlay("air_quality")}
             />
             <span>Air quality risk areas</span>
@@ -205,7 +203,7 @@ export default function LayersFiltersPanel() {
           <label className="side-option">
             <input
               type="checkbox"
-              checked={overlays.includes("high_altitude")}
+              checked={filters.overlays.includes("high_altitude")}
               onChange={() => toggleOverlay("high_altitude")}
             />
             <span>High-altitude zones</span>
