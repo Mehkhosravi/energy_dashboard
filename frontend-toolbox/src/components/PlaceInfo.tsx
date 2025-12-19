@@ -1,4 +1,5 @@
 // src/components/PlaceInfo.tsx
+import ProvinceProductionChart from "./charts/ProvinceProductionChart";
 import { useSelectedTerritory } from "./contexts/SelectedTerritoryContext";
 
 function buildLabel(t: {
@@ -45,6 +46,7 @@ export default function PlaceInfo() {
     <div className="selected-place">
       {/* Human-readable label derived from level + parent hierarchy */}
       <span className="selected-place-text">{buildLabel(selectedTerritory)}</span>
+      <ProvinceProductionChart />
     </div>
   );
 }
