@@ -1,0 +1,1 @@
+export type AppTab = "dashboard" | "data-import";
