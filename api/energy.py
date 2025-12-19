@@ -1,6 +1,5 @@
 # api/energy.py
 
-
 from __future__ import annotations
 
 from flask import Blueprint, jsonify, request
@@ -117,9 +116,8 @@ def choropleth_values_only():
         name_expr = "t.municipality_name"
     elif level == "province":
         name_expr = "t.province_name"
-    else:
+    else:  # region
         name_expr = "t.region_name"
-
 
     where_sql, params = _build_where(
         level=level,
@@ -148,8 +146,7 @@ def choropleth_values_only():
     WHERE {where_sql}
     GROUP BY t.id, {name_expr}, t.reg_cod, t.prov_cod, t.mun_cod
     ORDER BY t.id;
-"""
-
+    """
 
     rows = fetch_query(sql, tuple(params))
     out = [
@@ -183,10 +180,10 @@ def chart_series():
     base_group = (request.args.get("base_group") or "").lower().strip()
     category_code = (request.args.get("category_code") or "").strip()
 
-    # 🔹 validations
+    # validations
     if level not in ALLOWED_LEVELS:
         return jsonify({"error": "Invalid level"}), 400
-    if resolution not in {"monthly", "annual"}:
+    if resolution not in {"hourly", "monthly", "annual"}:
         return jsonify({"error": "Invalid resolution"}), 400
     if not year:
         return jsonify({"error": "Missing year"}), 400
@@ -195,7 +192,7 @@ def chart_series():
     if day_type is not None and day_type not in ALLOWED_DAY_TYPES:
         return jsonify({"error": "Invalid day_type"}), 400
 
-    # 🔹 code per level
+    # code per level
     if level == "comune":
         code = request.args.get("comune_code")
         code_field = "t.mun_cod"
@@ -220,11 +217,27 @@ def chart_series():
         category_code=category_code,
     )
 
-    # 🔹 apply code filter
+    # apply code filter
     where_sql += f" AND {code_field} = %s"
     params.append(code)
 
-    if resolution == "monthly":
+    if resolution == "hourly":
+        sql = f"""
+            SELECT
+              tm.hour AS x,
+              SUM(f.value_mwh) AS value_mwh
+            FROM energy_dw.fact_energy f
+            JOIN energy_dw.dim_territory_en t ON t.id = f.territory_id
+            JOIN energy_dw.dim_time tm ON tm.id = f.time_id
+            JOIN energy_dw.dim_energy_category ec ON ec.id = f.category_id
+            JOIN energy_dw.dim_scenario sc ON sc.id = f.scenario_id
+            WHERE {where_sql}
+              AND tm.hour IS NOT NULL
+            GROUP BY tm.hour
+            ORDER BY tm.hour;
+        """
+
+    elif resolution == "monthly":
         sql = f"""
             SELECT
               tm.month AS x,
@@ -240,7 +253,8 @@ def chart_series():
             GROUP BY tm.month
             ORDER BY tm.month;
         """
-    else:
+
+    else:  # annual
         sql = f"""
             SELECT
               tm.year AS x,
@@ -258,7 +272,12 @@ def chart_series():
         """
 
     rows = fetch_query(sql, tuple(params))
-    return jsonify([
-        {"x": r["x"], "value_mwh": float(r["value_mwh"]) if r["value_mwh"] is not None else 0.0}
-        for r in rows
-    ])
+    return jsonify(
+        [
+            {
+                "x": int(r["x"]) if r["x"] is not None else None,
+                "value_mwh": float(r["value_mwh"]) if r["value_mwh"] is not None else 0.0,
+            }
+            for r in rows
+        ]
+    )

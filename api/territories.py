@@ -71,6 +71,7 @@ territories_bp = Blueprint("territories", __name__)
 
 ALLOWED_LEVELS = {"comune", "province", "region"}
 
+_CACHE = {}
 
 @territories_bp.get("/territories")
 def territories_geo():
@@ -86,9 +87,14 @@ def territories_geo():
     if simplify is None:
         simplify = 0.005 if level == "province" else (0.01 if level == "region" else 0.001)
 
+    cache_key = f"territories_{level}_{simplify:.6f}"
+    if cache_key in _CACHE:
+        return jsonify(_CACHE[cache_key])
+
         # 🔹 choose correct name column
     if level == "comune":
         name_field = "t.municipality_name"
+    # elif level == "":
     elif level == "province":
         name_field = "t.province_name"
     else:
@@ -131,7 +137,6 @@ def territories_geo():
             }
         })
 
-    return jsonify({
-        "type": "FeatureCollection",
-        "features": features
-    })
+    result = {"type":"FeatureCollection","features":features}
+    _CACHE[cache_key] = result
+    return jsonify(result)

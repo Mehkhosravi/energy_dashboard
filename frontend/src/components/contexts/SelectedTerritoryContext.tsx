@@ -1,31 +1,19 @@
 // src/components/contexts/SelectedTerritoryContext.tsx
 //
-// Why this context exists:
-// - You need ONE single “source of truth” for what the user selected from the search bar.
-// - The user can select: region / province / municipality.
-// - Map + charts + KPI cards should all react to the same selection.
-// - Storing the selected territory in one place prevents conflicts like:
-//   “search selected municipality but charts still show previous province”.
+// Default selection: Province of Torino
 
-import React, { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 import type { TerritoryLevel } from "../TerritoryLevel";
+import { TERRITORIES } from "../TerritoryLevel";
 
-// This is the exact object you will store globally after a user selects
-// something in the search bar.
 export type SelectedTerritory = {
   level: TerritoryLevel;
   name: string;
-
-  // Codes are what your backend will use to query energy + geometry
-  // without relying on string matching.
   codes: {
     reg: number;
-    prov?: number; // present when level is province or municipality
-    mun?: number;  // present when level is municipality
+    prov?: number;
+    mun?: number;
   };
-
-  // Parent names are UI-friendly metadata for displaying hierarchy.
-  // (not strictly required for querying, but very useful for meta labels)
   parent?: {
     region?: string;
     province?: string;
@@ -33,13 +21,8 @@ export type SelectedTerritory = {
 };
 
 type SelectedTerritoryContextValue = {
-  // The currently selected territory (or null if nothing selected yet)
   selectedTerritory: SelectedTerritory | null;
-
-  // Set the selected territory (called by MapShell when user selects an item)
   setSelectedTerritory: (t: SelectedTerritory | null) => void;
-
-  // Convenience helper for clearing selection (optional, but handy)
   clearSelectedTerritory: () => void;
 };
 
@@ -47,16 +30,31 @@ const SelectedTerritoryContext = createContext<
   SelectedTerritoryContextValue | undefined
 >(undefined);
 
+// ✅ Exact match for your Torino entry
+function getDefaultTorinoProvince(): SelectedTerritory | null {
+  const torino = TERRITORIES.find(
+    (t) => t.level === "province" && t.name === "Torino"
+  );
+
+  if (!torino) return null;
+
+  return {
+    level: torino.level,
+    name: torino.name,
+    codes: torino.codes,
+    parent: torino.parent,
+  };
+}
+
 export function SelectedTerritoryProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // ✅ Default is Torino province (codes.reg=1, codes.prov=1)
   const [selectedTerritory, setSelectedTerritory] =
-    useState<SelectedTerritory | null>(null);
+    useState<SelectedTerritory | null>(() => getDefaultTorinoProvince());
 
-  // useMemo prevents re-renders of consumers when the object identity would
-  // otherwise change unnecessarily.
   const value = useMemo(
     () => ({
       selectedTerritory,

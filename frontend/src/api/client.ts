@@ -1,14 +1,32 @@
 // src/api/client.ts
 
 const API_BASE =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5000";
 
-async function getJSON<T>(path: string): Promise<T> {
-  const url = path.startsWith("http")
+type GetJSONOptions = {
+  params?: Record<string, any>;
+  signal?: AbortSignal;
+};
+
+function buildQuery(params?: Record<string, any>) {
+  if (!params) return "";
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v === undefined || v === null || v === "") continue;
+    qs.set(k, String(v));
+  }
+  const s = qs.toString();
+  return s ? `?${s}` : "";
+}
+
+async function getJSON<T>(path: string, opts: GetJSONOptions = {}): Promise<T> {
+  const urlBase = path.startsWith("http")
     ? path
     : `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
 
-  const res = await fetch(url);
+  const url = `${urlBase}${buildQuery(opts.params)}`;
+
+  const res = await fetch(url, { signal: opts.signal });
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
@@ -20,39 +38,46 @@ async function getJSON<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+// ---- Types for /charts/series
+export type ChartSeriesPoint = { x: number; value_mwh: number };
+
 export const api = {
-  // GET /consumption/province/monthly/{sector}/{provCod}
+  // existing endpoints (unchanged)
   getProvinceMonthlyConsumptionSector: <T>(
     sector: "residential" | "primary" | "secondary" | "tertiary",
     provCod: number
   ) => getJSON<T>(`/consumption/province/monthly/${sector}/${provCod}`),
 
-  // GET /production/monthly/{provCod}
   getProvinceMonthlyProduction: <T>(provCod: number) =>
     getJSON<T>(`/production/monthly/${provCod}`),
 
-   //  consumption: monthly sectors by province + sector
   getProvinceMonthlySector: <T>(
     sector: "residential" | "primary" | "secondary" | "tertiary",
     provCod: number
   ) => getJSON<T>(`/consumption/province/monthly/${sector}/${provCod}`),
 
-  //  production: summary by province (single row with solar/wind/…)
   getProvinceProductionSummaryannual: <T>(provCod: number) =>
     getJSON<T>(`/production/${provCod}`),
 
-  // NEW: monthly energy by comune (DW-based endpoint)
   getComuneMonthlyEnergy: <T>(params: {
     comune: string;
     year: number;
     domain?: "consumption" | "production";
   }) => {
     const domain = params.domain ?? "consumption";
-
-    return getJSON<T>(
-      `/api/energy/monthly?comune=${encodeURIComponent(
-        params.comune
-      )}&year=${params.year}&domain=${domain}`
-    );
+    return getJSON<T>(`/api/energy/monthly`, {
+      params: {
+        comune: params.comune,
+        year: params.year,
+        domain,
+      },
+    });
   },
+
+  // ✅ NEW: generic charts series endpoint (hourly/daily/etc)
+  // GET /charts/series?...query...
+  getChartSeries: <T = ChartSeriesPoint[]>(
+    params: Record<string, any>,
+    signal?: AbortSignal
+  ) => getJSON<T>(`/charts/series`, { params, signal }),
 };

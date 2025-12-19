@@ -17,16 +17,21 @@ type BackendLevel = "region" | "province" | "comune";
 type AnyFC = FeatureCollection<Geometry, any>;
 
 /**
- * VALUES API sample (you gave):
- * region rows:   { cod_reg: 16, cod_prov: null, pro_com: null, value_mwh: ... }
- * province rows: { cod_reg: 20, cod_prov: 95,  pro_com: null, value_mwh: ... }
- * comune rows:   { cod_reg: 1,  cod_prov: 1,   pro_com: 1001, value_mwh: ... }
+ * ✅ Flexible values row:
+ * backend might return cod_prov OR prov_cod, etc.
  */
 type ValuesRow = {
-  cod_reg: number | string | null;
-  cod_prov: number | string | null;
-  pro_com: number | string | null;
-  value_mwh: number | null;
+  cod_reg?: number | string | null;
+  reg_cod?: number | string | null;
+
+  cod_prov?: number | string | null;
+  prov_cod?: number | string | null;
+
+  pro_com?: number | string | null;
+  mun_cod?: number | string | null;
+  cod_com?: number | string | null;
+
+  value_mwh: number | string | null;
   name?: string | null;
 };
 
@@ -35,14 +40,6 @@ type ValuesRow = {
 // -----------------------------
 const GEO_API = "http://localhost:5000/map/territories";
 const VALUES_API = "http://127.0.0.1:5000/charts/values";
-
-// fixed for now (as you said)
-const FIXED = {
-  resolution: "annual",
-  year: 2019,
-  domain: "consumption",
-  scenario: 0,
-} as const;
 
 const PALETTE = ["#FFFFB2", "#FECC5C", "#FD8D3C", "#F03B20", "#BD0026", "#800026"];
 
@@ -59,11 +56,16 @@ function toNum(x: unknown): number | null {
 }
 
 function simplifyFor(level: BackendLevel) {
-  // geometry simplify only (doesn't affect codes)
   if (level === "region") return 0.02;
   if (level === "province") return 0.005;
-  return 0.0025;
+  return 0.0025; // comune
 }
+
+const LEVEL_ZOOM = {
+  region: { maxZoom: 8 },
+  province: { maxZoom: 10 },
+  comune: { maxZoom: 13 },
+} as const;
 
 function quantileBreaks(values: number[], classes: number) {
   const sorted = [...values].filter((v) => Number.isFinite(v)).sort((a, b) => a - b);
@@ -94,43 +96,55 @@ function colorForValue(v: number | null | undefined, breaks: number[], colors: s
   return colors[colors.length - 1];
 }
 
-/**
- * ✅ IMPORTANT:
- * These extract the "join key" from GeoJSON feature.properties.
- * If these return null -> you will get matched=0 -> map shows gray.
- *
- * You MUST ensure these match the property names your /map/territories returns.
- */
+// -----------------------------
+// Code extractors (GeoJSON props)
+// -----------------------------
 function getRegionCode(p: any): number | null {
-  // You said "for region by reg_cod" (so we include reg_cod too)
   return (
     toNum(p?.COD_REG) ??
     toNum(p?.cod_reg) ??
     toNum(p?.REG_COD) ??
     toNum(p?.reg_cod) ??
-    toNum(p?.regcode) ??
+    toNum(p?.REGION_CODE) ??
+    toNum(p?.region_code) ??
+    toNum(p?.id_reg) ??
+    toNum(p?.id) ??
     null
   );
 }
+
 function getProvinceCode(p: any): number | null {
   return (
     toNum(p?.COD_PROV) ??
     toNum(p?.cod_prov) ??
     toNum(p?.PROV_COD) ??
     toNum(p?.prov_cod) ??
+    toNum(p?.COD_UTS) ??
+    toNum(p?.cod_uts) ??
+    toNum(p?.UTS_CODE) ??
+    toNum(p?.uts_code) ??
+    toNum(p?.id_prov) ??
+    toNum(p?.province_id) ??
+    toNum(p?.id) ??
     null
   );
 }
+
 function getComuneCode(p: any): number | null {
   return (
     toNum(p?.PRO_COM) ??
     toNum(p?.pro_com) ??
+    toNum(p?.MUN_COD) ??
+    toNum(p?.mun_cod) ??
     toNum(p?.COD_COM) ??
     toNum(p?.cod_com) ??
     toNum(p?.ISTAT) ??
     toNum(p?.istat) ??
     toNum(p?.ISTAT_COM) ??
     toNum(p?.istat_com) ??
+    toNum(p?.id_mun) ??
+    toNum(p?.municipality_id) ??
+    toNum(p?.id) ??
     null
   );
 }
@@ -147,23 +161,40 @@ function getNameFor(level: BackendLevel, p: any): string {
   return (p?.DEN_COM ?? p?.den_com ?? p?.name ?? "").toString();
 }
 
-function backendLevelFromScale(scale: "region" | "province" | "municipality"): BackendLevel {
-  // UI uses "municipality", backend uses "comune"
-  return scale === "municipality" ? "comune" : scale;
+// -----------------------------
+// Scale normalization (compat with older "municipality")
+// -----------------------------
+function normalizeScale(scale: any): BackendLevel {
+  if (scale === "municipality") return "comune";
+  if (scale === "comune") return "comune";
+  if (scale === "province") return "province";
+  return "region";
 }
 
+// -----------------------------
+// MapFilters -> backend params
+// -----------------------------
+function backendDomainFromTheme(theme: "consumption" | "production" | "future_potential") {
+  return theme === "future_potential" ? "future_production" : theme;
+}
+
+function backendResolutionFromTimeResolution(
+  r: "annual" | "monthly" | "daily" | "hourly"
+): "annual" | "monthly" | "hourly" {
+  if (r === "daily") return "monthly";
+  return r;
+}
+
+// -----------------------------
+// Fit-to-selection (for search-driven selection, etc.)
+// -----------------------------
 function wantedCodeFromSelection(level: BackendLevel, sel: any): number | null {
-  // SelectedTerritoryContext type:
-  // codes: { reg: number; prov?: number; mun?: number }
   if (!sel?.codes) return null;
   if (level === "region") return typeof sel.codes.reg === "number" ? sel.codes.reg : null;
   if (level === "province") return typeof sel.codes.prov === "number" ? sel.codes.prov : null;
   return typeof sel.codes.mun === "number" ? sel.codes.mun : null;
 }
 
-// -----------------------------
-// Fit-to-selection
-// -----------------------------
 function FitToSelection({
   geo,
   level,
@@ -184,13 +215,12 @@ function FitToSelection({
   useEffect(() => {
     if (!geo || !selectedTerritory) return;
 
-    // SelectedTerritoryContext uses: "municipality"
+    // selection levels in your app can still be "municipality"
     const selLevel: BackendLevel =
       selectedTerritory.level === "municipality"
         ? "comune"
         : (selectedTerritory.level as "region" | "province");
 
-    // only fit when selection level == rendered level
     if (selLevel !== level) return;
 
     const wantedCode = wantedCodeFromSelection(level, selectedTerritory);
@@ -208,13 +238,45 @@ function FitToSelection({
 
     const bounds = L.geoJSON(feat).getBounds();
     if (bounds.isValid()) {
-      // ✅ This is why municipality makes map "small":
-      // a comune polygon is small => bounds small => zoom in a lot.
-      // If you want, add maxZoom here:
-      map.fitBounds(bounds, { padding: [20, 20] /*, maxZoom: 10 */ });
+      map.fitBounds(bounds, {
+        padding: [20, 20],
+        maxZoom: LEVEL_ZOOM[level].maxZoom,
+      });
       lastSig.current = sig;
     }
   }, [geo, level, selectedTerritory, map]);
+
+  return null;
+}
+
+// -----------------------------
+// Auto switch level based on zoom (only when nothing is selected)
+// -----------------------------
+function ScaleFromZoom({
+  activeLevel,
+  onLevelChange,
+}: {
+  activeLevel: BackendLevel;
+  onLevelChange: (lvl: BackendLevel) => void;
+}) {
+  const map = useMap();
+  const { selectedTerritory } = useSelectedTerritory();
+
+  useEffect(() => {
+    const handler = () => {
+      // ✅ do not auto-switch while user has a selection (prevents fights)
+      if (selectedTerritory) return;
+
+      const z = map.getZoom();
+      const next: BackendLevel = z >= 11 ? "comune" : z >= 8 ? "province" : "region";
+      if (next !== activeLevel) onLevelChange(next);
+    };
+
+    map.on("zoomend", handler);
+    return () => {
+      map.off("zoomend", handler);
+    };
+  }, [map, activeLevel, onLevelChange, selectedTerritory]);
 
   return null;
 }
@@ -226,39 +288,31 @@ export default function MainMap() {
   const mapRef = useRef<LeafletMap | null>(null);
 
   const { selectedTerritory, setSelectedTerritory } = useSelectedTerritory();
-  const { filters } = useMapFilters();
+  const { filters, setScale } = useMapFilters();
 
   /**
-   * ✅ LEVEL DECISION:
-   * - If user selected something in search:
-   *   - region -> render region layer and fetch region geometry + region values
-   *   - province -> render province layer and fetch province geometry + province values
-   *   - municipality -> render comune layer and fetch comune geometry + comune values
-   * - Otherwise use side panel scale (default province)
-   *
-   * This means: changing selectedTerritory DOES trigger refetch,
-   * because it changes "level" which is dependency of both useEffects.
+   * ✅ Map layer level should be controlled by filters.scale only.
+   * (Selection should NOT override and cause unexpected reloads.)
    */
-  const level: BackendLevel = useMemo(() => {
-    if (selectedTerritory?.level === "region") return "region";
-    if (selectedTerritory?.level === "province") return "province";
-    if (selectedTerritory?.level === "municipality") return "comune";
-    return backendLevelFromScale(filters.scale);
-  }, [selectedTerritory, filters.scale]);
+  const level: BackendLevel = useMemo(() => normalizeScale(filters.scale), [filters.scale]);
+
+  const backendDomain = useMemo(() => backendDomainFromTheme(filters.theme), [filters.theme]);
+  const backendResolution = useMemo(
+    () => backendResolutionFromTimeResolution(filters.timeResolution),
+    [filters.timeResolution]
+  );
+
+  // Fixed for now (you can put these in filters later)
+  const year = 2019;
+  const scenario = 0;
+
+  useEffect(() => {
+    if (filters.timeResolution === "daily") {
+      console.warn("[Map] 'daily' not supported by backend yet. Falling back to 'monthly'.");
+    }
+  }, [filters.timeResolution]);
 
   const [geo, setGeo] = useState<AnyFC | null>(null);
-
-  /**
-   * valuesMap is our JOIN TABLE in frontend:
-   * Map<CODE, value_mwh>
-   *
-   * - region:   CODE = cod_reg (from values API)
-   * - province: CODE = cod_prov
-   * - comune:   CODE = pro_com
-   *
-   * Then for each geometry feature we extract CODE from feature.properties
-   * and lookup value_mwh from valuesMap.
-   */
   const [valuesMap, setValuesMap] = useState<Map<number, number>>(new Map());
 
   const [loadingGeo, setLoadingGeo] = useState(true);
@@ -273,24 +327,12 @@ export default function MainMap() {
     (async () => {
       setLoadingGeo(true);
       try {
-        // TARGET:
-        //   region:   /map/territories?level=region
-        //   province: /map/territories?level=province
-        //   comune:   /map/territories?level=comune
         const url = `${GEO_API}?level=${level}&simplify=${simplifyFor(level)}`;
-
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error(`Geo load failed: ${res.status}`);
 
         const fc = (await res.json()) as AnyFC;
         setGeo(fc);
-
-        // DEBUG: print one feature properties keys (THIS TELLS YOU THE REAL JOIN KEY NAMES)
-        const first = fc?.features?.[0] as any;
-        if (first?.properties) {
-          console.log(`[Geo] level=${level} sample properties keys:`, Object.keys(first.properties));
-          console.log(`[Geo] level=${level} sample properties:`, first.properties);
-        }
       } catch (e) {
         if ((e as any).name !== "AbortError") console.error(e);
         setGeo(null);
@@ -311,16 +353,12 @@ export default function MainMap() {
     (async () => {
       setLoadingVals(true);
       try {
-        // TARGET:
-        //   region:   /charts/values?level=region -> use cod_reg
-        //   province: /charts/values?level=province -> use cod_prov
-        //   comune:   /charts/values?level=comune -> use pro_com
         const qs = new URLSearchParams({
           level,
-          resolution: FIXED.resolution,
-          year: String(FIXED.year),
-          domain: FIXED.domain,
-          scenario: String(FIXED.scenario),
+          resolution: backendResolution,
+          year: String(year),
+          domain: backendDomain,
+          scenario: String(scenario),
         });
 
         const url = `${VALUES_API}?${qs.toString()}`;
@@ -329,34 +367,23 @@ export default function MainMap() {
 
         const rows = (await res.json()) as ValuesRow[];
 
-        // DEBUG: show one row (this confirms the "values" join key you must use)
-        console.log(`[Values] level=${level} sample row:`, rows?.[0]);
-
         const m = new Map<number, number>();
 
         for (const r of rows) {
-          // TARGET based on your samples:
-          // region:   code = r.cod_reg
-          // province: code = r.cod_prov
-          // comune:   code = r.pro_com
           const code =
             level === "region"
-              ? toNum(r.cod_reg)
+              ? toNum((r as any).cod_reg ?? (r as any).reg_cod)
               : level === "province"
-              ? toNum(r.cod_prov)
-              : toNum(r.pro_com);
+              ? toNum((r as any).cod_prov ?? (r as any).prov_cod)
+              : toNum((r as any).pro_com ?? (r as any).mun_cod ?? (r as any).cod_com);
 
-          const v = typeof r.value_mwh === "number" ? r.value_mwh : null;
+          const v = typeof r.value_mwh === "number" ? r.value_mwh : toNum((r as any).value_mwh);
+
           if (code == null || v == null || Number.isNaN(v)) continue;
-
           m.set(code, v);
         }
 
         setValuesMap(m);
-
-        // DEBUG: print few codes from valuesMap
-        const firstCodes = Array.from(m.keys()).slice(0, 10);
-        console.log(`[Values] level=${level} codes sample:`, firstCodes);
       } catch (e) {
         if ((e as any).name !== "AbortError") console.error(e);
         setValuesMap(new Map());
@@ -366,7 +393,7 @@ export default function MainMap() {
     })();
 
     return () => controller.abort();
-  }, [level]);
+  }, [level, backendDomain, backendResolution, year, scenario]);
 
   // --------------------------------
   // 3) Breaks for choropleth
@@ -377,59 +404,23 @@ export default function MainMap() {
   }, [valuesMap]);
 
   // --------------------------------
-  // 4) Debug JOIN result
-  // --------------------------------
-  useEffect(() => {
-    if (!geo) return;
-
-    let matched = 0;
-    let firstUnmatched: any = null;
-
-    for (const f of geo.features as any[]) {
-      const p = f?.properties ?? {};
-      const code = codeForFeature(level, p);
-
-      if (code != null && valuesMap.has(code)) matched++;
-      else if (!firstUnmatched) firstUnmatched = { code, props: p };
-    }
-
-    console.log(
-      `[JOIN] level=${level} features=${geo.features.length} values=${valuesMap.size} matched=${matched}`
-    );
-
-    if (matched === 0 && firstUnmatched) {
-      console.warn(`[JOIN] matched=0. Example feature code extracted:`, firstUnmatched.code);
-      console.warn(
-        `[JOIN] matched=0. Example feature props (keys):`,
-        Object.keys(firstUnmatched.props || {})
-      );
-      console.warn(`[JOIN] matched=0. Example feature props:`, firstUnmatched.props);
-      console.warn(
-        `[JOIN] matched=0. This means codeForFeature() is reading the WRONG property name for ${level}.`
-      );
-    }
-  }, [geo, valuesMap, level]);
-
-  // --------------------------------
-  // 5) Style uses JOIN:
+  // 4) Style uses JOIN
   // --------------------------------
   const style = (feature: any) => {
     const p = feature?.properties ?? {};
-
-    // TARGET:
-    // region:   code = properties.COD_REG / reg_cod / ...
-    // province: code = properties.COD_PROV / ...
-    // comune:   code = properties.PRO_COM / ...
     const code = codeForFeature(level, p);
-
-    // TARGET:
-    // value = valuesMap.get(code) where valuesMap was built from value_mwh
     const v = code != null ? valuesMap.get(code) : undefined;
 
     const isSelected =
-      (level === "region" && selectedTerritory?.level === "region" && selectedTerritory.codes?.reg === code) ||
-      (level === "province" && selectedTerritory?.level === "province" && selectedTerritory.codes?.prov === code) ||
-      (level === "comune" && selectedTerritory?.level === "municipality" && selectedTerritory.codes?.mun === code);
+      (level === "region" &&
+        selectedTerritory?.level === "region" &&
+        selectedTerritory.codes?.reg === code) ||
+      (level === "province" &&
+        selectedTerritory?.level === "province" &&
+        selectedTerritory.codes?.prov === code) ||
+      (level === "comune" &&
+        selectedTerritory?.level === "municipality" &&
+        selectedTerritory.codes?.mun === code);
 
     return {
       color: isSelected ? "#000" : "#333",
@@ -466,7 +457,10 @@ export default function MainMap() {
         setSelectedTerritory({ level: "municipality", name, codes: { reg, prov, mun: code } });
       }
 
-      mapRef.current?.fitBounds(layer.getBounds(), { padding: [20, 20] });
+      mapRef.current?.fitBounds(layer.getBounds(), {
+        padding: [20, 20],
+        maxZoom: LEVEL_ZOOM[level].maxZoom,
+      });
     });
   };
 
@@ -485,6 +479,7 @@ export default function MainMap() {
             justifyContent: "center",
             background: "rgba(255,255,255,0.7)",
             fontSize: 14,
+            pointerEvents: "none", // ✅ IMPORTANT: don't block map interaction
           }}
         >
           Loading…
@@ -497,12 +492,21 @@ export default function MainMap() {
           attribution="Tiles © Esri"
         />
 
-        {/* This is what causes municipality to zoom a lot (small bounds). */}
+        {/* ✅ Auto change level based on zoom (only when nothing is selected) */}
+        <ScaleFromZoom
+          activeLevel={level}
+          onLevelChange={(lvl) => {
+            // keep compatibility with your context values
+            setScale(lvl === "comune" ? ("comune" as any) : (lvl as any));
+          }}
+        />
+
+        {/* ✅ Fit when selection exists (search-driven or external selection) */}
         <FitToSelection geo={geo} level={level} mapRef={mapRef} />
 
         {geo && (
           <GeoJSON
-            key={level}
+            key={`${level}-${backendDomain}-${backendResolution}`} // safer re-mount when data changes
             data={geo as any}
             style={style as any}
             onEachFeature={onEachFeature as any}
@@ -514,4 +518,3 @@ export default function MainMap() {
     </div>
   );
 }
-

@@ -35,16 +35,16 @@ export default function PlaceInfo() {
   // Empty state (nothing selected yet)
   if (!selectedTerritory) {
     return (
-      <div className="selected-place">
-        <span className="selected-place-text">No territory selected</span>
+      <div className="map-info">
+        <span className="map-info-header">No territory selected</span>
       </div>
     );
   }
 
   return (
-    <div className="selected-place">
+    <div className="map-info">
       {/* Human-readable label derived from level + parent hierarchy */}
-      <span className="selected-place-text">{buildLabel(selectedTerritory)}</span>
+      <span className="map-info-header">{buildLabel(selectedTerritory)}</span>
     </div>
   );
 }

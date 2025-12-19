@@ -1,110 +1,130 @@
 // src/hooks/useHourlyData.ts
-import { useMemo } from "react";
-import rawHourlyData from "../data/Torino_hourly_data.json";
-
-// ---- Types ----
+import { useEffect, useMemo, useState } from "react";
+import { useSelectedTerritory } from "../components/contexts/SelectedTerritoryContext";
+import { api } from "../api/client";
+import type { ChartSeriesPoint } from "../api/client";
 
 export type DayType = "weekday" | "weekend";
 
-export interface HourlyDayValues {
-  residential: number;
-  primary: number;
-  secondary: number;
-  tertiary: number;
+export type HourlyPoint = {
+  hour: number;      // 0..23
+  value_mwh: number;
+};
+
+type UseHourlyDataArgs = {
+  year: number;
+  scenario: number;
+  domain?: "consumption" | "production" | "future_production";
+  dayType?: DayType;
+};
+
+function toNumber(v: unknown): number | null {
+  const n = typeof v === "string" ? Number(v) : (v as number);
+  return Number.isFinite(n) ? n : null;
 }
 
-export interface HourlyRow {
-  hour: number;
-  hour_label: string;
-  weekday: HourlyDayValues;
-  weekend: HourlyDayValues;
+function normalizeHourlySeries(raw: any): HourlyPoint[] {
+  if (!Array.isArray(raw)) return [];
+
+  const byHour = new Map<number, number>();
+  for (const r of raw as ChartSeriesPoint[]) {
+    const x = toNumber((r as any)?.x);
+    const v = toNumber((r as any)?.value_mwh);
+    if (x == null || v == null) continue;
+
+    const hour = x - 1; // 1..24 -> 0..23
+    if (hour >= 0 && hour <= 23) byHour.set(hour, v);
+  }
+
+  const full: HourlyPoint[] = [];
+  for (let h = 0; h < 24; h++) full.push({ hour: h, value_mwh: byHour.get(h) ?? 0 });
+  return full;
 }
 
-export interface HourlySeasonRecord {
-  prov_cod: string;
-  prov_name: string;
-  month: string;   // e.g. "jan", "feb", "mar"
-  season: string;  // "winter" | "spring" | "summer" | "autumn"
-  unit: string;    // "MWh"
-  timezone: string;
-  sectors: string[];
-  day_types: DayType[];
-  data: HourlyRow[];
+function backendLevel(level: string) {
+  return level === "municipality" ? "comune" : level;
 }
 
-export interface WinterHourlyChartPoint {
-  hour: number;
-  hour_label: string;
-  residential_weekday?: number;
-  primary_weekday?: number;
-  secondary_weekday?: number;
-  tertiary_weekday?: number;
-  residential_weekend?: number;
-  primary_weekend?: number;
-  secondary_weekend?: number;
-  tertiary_weekend?: number;
-}
+export function useHourlyData({
+  year,
+  scenario,
+  domain = "consumption",
+  dayType,
+}: UseHourlyDataArgs) {
+  const { selectedTerritory } = useSelectedTerritory();
 
-// ---- Internal: parse static JSON ----
+  const [data, setData] = useState<HourlyPoint[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-const hourlyData: HourlySeasonRecord[] = rawHourlyData as HourlySeasonRecord[];
+  const territoryParam = useMemo(() => {
+    if (!selectedTerritory) return null;
 
-// ---- Builders ----
+    if (selectedTerritory.level === "region") {
+      return { key: "region_code", value: selectedTerritory.codes.reg };
+    }
+    if (selectedTerritory.level === "province") {
+      return { key: "province_code", value: selectedTerritory.codes.prov ?? null };
+    }
+    // comune OR municipality
+    return { key: "municipality_code", value: selectedTerritory.codes.mun ?? null };
+  }, [selectedTerritory]);
 
-/**
- * Build the winter hourly series (0–23), for a given province.
- * For now it uses the first "winter" record for that province (e.g. January).
- * Later you can extend this to average Jan–Feb–Mar if you add them.
- */
-export function buildWinterHourlySeries(
-  provCod: string
-): WinterHourlyChartPoint[] {
-  const winterRecord = hourlyData.find(
-    (rec) => rec.prov_cod === provCod && rec.season === "winter"
-  );
+  useEffect(() => {
+    if (!selectedTerritory) {
+      setData([]);
+      setError(null);
+      return;
+    }
+    if (!territoryParam || territoryParam.value == null) {
+      setData([]);
+      setError("No valid territory code found for the selected territory.");
+      return;
+    }
 
-  if (!winterRecord) return [];
+    const controller = new AbortController();
 
-  return winterRecord.data.map((row) => ({
-    hour: row.hour,
-    hour_label: row.hour_label,
-    residential_weekday: row.weekday.residential,
-    primary_weekday: row.weekday.primary,
-    secondary_weekday: row.weekday.secondary,
-    tertiary_weekday: row.weekday.tertiary,
-    residential_weekend: row.weekend.residential,
-    primary_weekend: row.weekend.primary,
-    secondary_weekend: row.weekend.secondary,
-    tertiary_weekend: row.weekend.tertiary,
-  }));
-}
+    (async () => {
+      setLoading(true);
+      setError(null);
 
-// ---- Main hook ----
+      try {
+        const params: Record<string, any> = {
+          level: backendLevel(selectedTerritory.level),
+          resolution: "hourly",
+          domain,
+          year,
+          scenario,
+          [territoryParam.key]: territoryParam.value,
+        };
 
-/**
- * Hook to access hourly data for a given province.
- * - allSeasons: raw JSON records (all seasons)
- * - winterSeries: processed 0–23 hourly series for winter (for charts)
- */
-export function useHourlyData(provCod: string) {
-  const allSeasons = hourlyData;
+        if (dayType) params.day_type = dayType;
 
-  const winterSeries = useMemo(
-    () => buildWinterHourlySeries(provCod),
-    [provCod]
-  );
+        const res = await api.getChartSeries<ChartSeriesPoint[]>(
+          params,
+          controller.signal
+        );
 
-  const winterMeta = useMemo(
-    () =>
-      allSeasons.find(
-        (rec) => rec.prov_cod === provCod && rec.season === "winter"
-      ) || null,
-    [allSeasons, provCod]
-  );
+        setData(normalizeHourlySeries(res));
+      } catch (e: any) {
+        if (e?.name === "AbortError") return;
+        setError(e?.message ?? "Failed to load hourly series");
+        setData([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
 
-  return {
-    allSeasons,
-    winterSeries,
-    winterMeta,
-  };
+    return () => controller.abort();
+  }, [
+    selectedTerritory,
+    territoryParam?.key,
+    territoryParam?.value,
+    year,
+    scenario,
+    domain,
+    dayType,
+  ]);
+
+  return { data, loading, error };
 }

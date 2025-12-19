@@ -8,6 +8,7 @@ import MapShell from "./MapShell";
 import ChartsShell from "./ChartShell";
 import AdminPanel from "./admin/AdminPanel";
 import AdminContent from "./admin/AdminContent";
+import ChartShell from "./ChartShell";
 
 type GridProps = {
   map: ReactNode;
@@ -61,7 +62,7 @@ export default function Grid({ map, side }: GridProps) {
             ) : (
               <>
                 <MapShell map={map} onTogglePanel={togglePanel} />
-                <ChartsShell />
+                <ChartShell />
               </>
             )}
           </section>
