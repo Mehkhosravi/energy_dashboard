@@ -1,19 +1,15 @@
 // src/components/charts/HourlyChart.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
-  CartesianGrid,
-  Legend,
   Line,
   LineChart,
   Tooltip,
   XAxis,
   YAxis,
+  ResponsiveContainer,
 } from "recharts";
-
 import { useSelectedTerritory } from "../contexts/SelectedTerritoryContext";
-import { api } from "../../api/client";
-import type { ChartSeriesPoint } from "../../api/client";
-import type { SelectedTerritory } from "../contexts/SelectedTerritoryContext";
+import { useHourlyData } from "../../hooks/useHourlyData";
 
 type Props = {
   year: number;
@@ -24,13 +20,7 @@ type Props = {
 type SeasonRow = {
   key: "winter" | "spring" | "summer" | "autumn";
   label: string;
-  months: number[];
-};
-
-type MonthHourPoint = {
-  x: number; // 1..24
-  weekday_mwh: number | null;
-  weekend_mwh: number | null;
+  months: number[]; // 1..12
 };
 
 const MONTH_SHORT: Record<number, string> = {
@@ -52,12 +42,6 @@ function monthTitle(month: number, year: number) {
   return `${MONTH_SHORT[month]} ${year}`;
 }
 
-function domainTitle(domain: Props["domain"]) {
-  if (domain === "production") return "Hourly production";
-  if (domain === "future_production") return "Hourly future production";
-  return "Hourly consumption";
-}
-
 function formatHourTick(x: any) {
   const n = Number(x);
   if (!Number.isFinite(n)) return String(x);
@@ -70,138 +54,106 @@ function formatTooltipLabel(x: any) {
   return `Hour ${String(n).padStart(2, "0")}:00`;
 }
 
-function toNum(v: any): number {
-  const n = typeof v === "string" ? Number(v) : v;
-  return Number.isFinite(n) ? n : 0;
+function toChartData(
+  weekday: { hour: number; value_mwh: number }[],
+  weekend: { hour: number; value_mwh: number }[]
+) {
+  const wk = new Map<number, number>();
+  const we = new Map<number, number>();
+
+  for (const p of weekday) wk.set(p.hour + 1, p.value_mwh); // 0..23 -> 1..24
+  for (const p of weekend) we.set(p.hour + 1, p.value_mwh);
+
+  const out: Array<{ x: number; weekday_mwh: number | null; weekend_mwh: number | null }> = [];
+  for (let x = 1; x <= 24; x++) {
+    out.push({
+      x,
+      weekday_mwh: wk.get(x) ?? null,
+      weekend_mwh: we.get(x) ?? null,
+    });
+  }
+  return out;
 }
 
-function backendLevel(level: SelectedTerritory["level"]) {
-  return level === "municipality" ? "comune" : level;
-}
-
-function getTerritoryParam(t: SelectedTerritory) {
-  if (t.level === "region") return { key: "region_code", value: t.codes.reg };
-  if (t.level === "province")
-    return { key: "province_code", value: t.codes.prov ?? null };
-  return { key: "municipality_code", value: t.codes.mun ?? null };
-}
-
-function MonthChart({
+function MonthMiniChart({
   year,
-  month,
   scenario,
   domain,
+  month,
 }: {
   year: number;
-  month: number;
   scenario: number;
   domain: "consumption" | "production" | "future_production";
+  month: number; // 1..12
 }) {
-  const { selectedTerritory } = useSelectedTerritory();
-  const [data, setData] = useState<MonthHourPoint[]>([]);
+  // ✅ new API supports month=...
+  const wk = useHourlyData({ year, scenario, domain, dayType: "weekday", month });
+  const we = useHourlyData({ year, scenario, domain, dayType: "weekend", month });
 
-  useEffect(() => {
-    if (!selectedTerritory) return;
+  const chartData = useMemo(() => toChartData(wk.data, we.data), [wk.data, we.data]);
 
-    const territoryParam = getTerritoryParam(selectedTerritory);
-    if (territoryParam.value == null) return;
-
-    const controller = new AbortController();
-
-    async function run() {
-      const baseParams: Record<string, any> = {
-        level: backendLevel(selectedTerritory.level),
-        resolution: "hourly",
-        domain,
-        year,
-        scenario,
-        month,
-        [territoryParam.key]: territoryParam.value,
-      };
-
-      const [wk, we] = await Promise.all([
-        api.getChartSeries<ChartSeriesPoint[]>(
-          { ...baseParams, day_type: "weekday" },
-          controller.signal
-        ),
-        api.getChartSeries<ChartSeriesPoint[]>(
-          { ...baseParams, day_type: "weekend" },
-          controller.signal
-        ),
-      ]);
-
-      const wkMap = new Map<number, number>();
-      const weMap = new Map<number, number>();
-
-      wk.forEach((p) => wkMap.set(toNum((p as any).x), toNum((p as any).value_mwh)));
-      we.forEach((p) => weMap.set(toNum((p as any).x), toNum((p as any).value_mwh)));
-
-      const merged: MonthHourPoint[] = [];
-      for (let x = 1; x <= 24; x++) {
-        merged.push({
-          x,
-          weekday_mwh: wkMap.get(x) ?? null,
-          weekend_mwh: weMap.get(x) ?? null,
-        });
-      }
-
-      setData(merged);
-    }
-
-    run();
-    return () => controller.abort();
-  }, [selectedTerritory, year, month, scenario, domain]);
+  const loading = wk.loading || we.loading;
+  const error = wk.error || we.error;
 
   return (
     <div className="chart-card" style={{ border: "none", boxShadow: "none" }}>
       <div className="chart-header">
         <h3>{monthTitle(month, year)}</h3>
-        <div className="chart-subtitle">Weekday vs Weekend</div>
+        <div className="chart-subtitle">
+          Weekday vs Weekend {loading ? "· Loading…" : ""}
+        </div>
+        {error ? (
+          <div className="chart-subtitle" style={{ color: "#dc2626" }}>
+            {error}
+          </div>
+        ) : null}
       </div>
 
-      <div className="chart-container">
-        <LineChart
-          style={{
-            width: "100%",
-            height: 50,              // ✅ fixed small height
-          }}
-          data={data}
-          margin={{ top: 6, right: 0, left: 8, bottom: 0 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="x" tickFormatter={formatHourTick} interval={3} />
-          <YAxis width={48} tick={{ fontSize: 10 }} />
-          <Tooltip labelFormatter={formatTooltipLabel} />
-          <Legend />
-          <Line
-            type="monotone"
-            dataKey="weekday_mwh"
-            name="Weekday"
-            stroke="#8884d8"
-            dot={false}
-            strokeWidth={1.5}
-            isAnimationActive={false}
-          />
-          <Line
-            type="monotone"
-            dataKey="weekend_mwh"
-            name="Weekend"
-            stroke="#82ca9d"
-            dot={false}
-            strokeWidth={1.5}
-            isAnimationActive={false}
-          />
-        </LineChart>
+      <div style={{ width: "100%", height: 90 }}>
+        <ResponsiveContainer>
+          <LineChart data={chartData} margin={{ top: 2, right: 6, left: 8, bottom: 0 }}>
+            <XAxis
+              dataKey="x"
+              tickFormatter={formatHourTick}
+              interval={5}
+              tick={{ fontSize: 10 }}
+              axisLine
+              tickLine
+            />
+            <YAxis width={52} tick={{ fontSize: 10 }} axisLine tickLine />
+            <Tooltip labelFormatter={formatTooltipLabel} />
+
+            <Line
+              type="monotone"
+              dataKey="weekday_mwh"
+              name="Weekday"
+              stroke="#8884d8"
+              dot={false}
+              strokeWidth={2}
+              isAnimationActive={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="weekend_mwh"
+              name="Weekend"
+              stroke="#82ca9d"
+              dot={false}
+              strokeWidth={2}
+              isAnimationActive={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="chart-subtitle" style={{ display: "flex", gap: 10, marginTop: 2 }}>
+        <span style={{ color: "#8884d8" }}>— Weekday</span>
+        <span style={{ color: "#82ca9d" }}>— Weekend</span>
       </div>
     </div>
   );
 }
 
-export default function HourlyChart({
-  year,
-  scenario,
-  domain = "consumption",
-}: Props) {
+export default function HourlyChart({ year, scenario, domain = "consumption" }: Props) {
   const { selectedTerritory } = useSelectedTerritory();
 
   const seasons: SeasonRow[] = useMemo(
@@ -217,16 +169,7 @@ export default function HourlyChart({
   if (!selectedTerritory) return null;
 
   return (
-    <div className="charts">
-      <div className="chart-header">
-        <h3>
-          {domainTitle(domain)} — {selectedTerritory.name}
-        </h3>
-        <div className="chart-subtitle">
-          {year} · Scenario {scenario}
-        </div>
-      </div>
-
+    <div>
       {seasons.map((season) => (
         <div key={season.key} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div className="chart-subtitle">
@@ -241,7 +184,7 @@ export default function HourlyChart({
             }}
           >
             {season.months.map((m) => (
-              <MonthChart
+              <MonthMiniChart
                 key={`${season.key}-${m}`}
                 year={year}
                 month={m}

@@ -7,7 +7,7 @@ import type { ChartSeriesPoint } from "../api/client";
 export type DayType = "weekday" | "weekend";
 
 export type HourlyPoint = {
-  hour: number;      // 0..23
+  hour: number; // 0..23
   value_mwh: number;
 };
 
@@ -16,6 +16,7 @@ type UseHourlyDataArgs = {
   scenario: number;
   domain?: "consumption" | "production" | "future_production";
   dayType?: DayType;
+  month?: number; // ✅ NEW: 1..12 (optional)
 };
 
 function toNumber(v: unknown): number | null {
@@ -32,12 +33,16 @@ function normalizeHourlySeries(raw: any): HourlyPoint[] {
     const v = toNumber((r as any)?.value_mwh);
     if (x == null || v == null) continue;
 
-    const hour = x - 1; // 1..24 -> 0..23
+    // backend returns tm.hour (likely 1..24 or 0..23 depending on your dim_time)
+    // your previous examples were 1..24 -> convert to 0..23:
+    const hour = x - 1;
     if (hour >= 0 && hour <= 23) byHour.set(hour, v);
   }
 
   const full: HourlyPoint[] = [];
-  for (let h = 0; h < 24; h++) full.push({ hour: h, value_mwh: byHour.get(h) ?? 0 });
+  for (let h = 0; h < 24; h++) {
+    full.push({ hour: h, value_mwh: byHour.get(h) ?? 0 });
+  }
   return full;
 }
 
@@ -50,6 +55,7 @@ export function useHourlyData({
   scenario,
   domain = "consumption",
   dayType,
+  month,
 }: UseHourlyDataArgs) {
   const { selectedTerritory } = useSelectedTerritory();
 
@@ -66,7 +72,7 @@ export function useHourlyData({
     if (selectedTerritory.level === "province") {
       return { key: "province_code", value: selectedTerritory.codes.prov ?? null };
     }
-    // comune OR municipality
+    // comune OR municipality (frontend)
     return { key: "municipality_code", value: selectedTerritory.codes.mun ?? null };
   }, [selectedTerritory]);
 
@@ -79,6 +85,12 @@ export function useHourlyData({
     if (!territoryParam || territoryParam.value == null) {
       setData([]);
       setError("No valid territory code found for the selected territory.");
+      return;
+    }
+
+    if (month != null && (month < 1 || month > 12)) {
+      setData([]);
+      setError("Invalid month (must be 1..12).");
       return;
     }
 
@@ -99,6 +111,7 @@ export function useHourlyData({
         };
 
         if (dayType) params.day_type = dayType;
+        if (month != null) params.month = month; // ✅ NEW
 
         const res = await api.getChartSeries<ChartSeriesPoint[]>(
           params,
@@ -124,6 +137,7 @@ export function useHourlyData({
     scenario,
     domain,
     dayType,
+    month, // ✅ include
   ]);
 
   return { data, loading, error };

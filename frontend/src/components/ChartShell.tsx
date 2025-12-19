@@ -104,8 +104,14 @@ export default function ChartShell() {
           </p>
         </div>
       </div>
+
+      {/* Hourly chart row */}
       <div className="chart-row">
         <div className="chart-card">
+          <div className="chart-header">
+            <h3>Hourly production and consumption</h3>
+            <span className="chart-subtitle">In GWh, for the {titlePlace}</span>
+          </div>
           <div
             className="chart-container chart-export-block"
             ref={(el) => {

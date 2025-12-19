@@ -50,6 +50,7 @@ def _build_where(
     day_type: str | None,
     base_group: str,
     category_code: str,
+    month: int | None,
 ):
     data_source = _pick_data_source(level, resolution)
 
@@ -66,6 +67,11 @@ def _build_where(
     if day_type is not None:
         where_parts.append("tm.day_type = %s")
         params.append(day_type)
+    
+    # month OPTIONAL
+    if month is not None:
+        where_parts.append("tm.month = %s")
+        params.append(month)
 
     # data_source
     if data_source == "__RAW__":
@@ -128,6 +134,7 @@ def choropleth_values_only():
         day_type=day_type,
         base_group=base_group,
         category_code=category_code,
+        month=None,
     )
 
     sql = f"""
@@ -174,6 +181,7 @@ def chart_series():
     scenario = (request.args.get("scenario") or "0").strip()
     year = request.args.get("year", type=int)
 
+    month = request.args.get("month", type=int)
     day_type = request.args.get("day_type")
     day_type = day_type.lower().strip() if day_type else None
 
@@ -215,6 +223,7 @@ def chart_series():
         day_type=day_type,
         base_group=base_group,
         category_code=category_code,
+        month=month,
     )
 
     # apply code filter
