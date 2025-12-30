@@ -1,3 +1,4 @@
+// src/components/LayersFiltersPanel.tsx
 import { useEffect, useState, type ReactNode } from "react";
 import { useSelectedTerritory } from "./contexts/SelectedTerritoryContext";
 import { useMapFilters } from "./contexts/MapFiltersContext";
@@ -31,15 +32,87 @@ function Section({ title, info, defaultOpen = true, children }: SectionProps) {
   );
 }
 
-export default function LayersFiltersPanel() {
-  const { selectedTerritory } = useSelectedTerritory();
-  const { filters, setTheme, setScale, setTimeResolution, setScaleMode, toggleOverlay } = useMapFilters();
-  //check the filter values
-  console.log("[Panel] scale =", filters.scale, "mode =", filters.scaleMode);
+/**
+ * Professional UX behavior:
+ * When user changes the spatial scale manually, keep context by "promoting" selection:
+ *  - municipality -> province / region
+ *  - province -> region
+ *  - region -> (cannot expand), keep selection unchanged
+ */
+function promoteSelectionToScale(
+  current: ReturnType<typeof useSelectedTerritory>["selectedTerritory"],
+  targetScale: "region" | "province" | "municipality"
+) {
+  if (!current) return null;
 
-  // ✅ sync panel scale when search selection changes
+  // already matches
+  if (current.level === targetScale) return current;
+
+  // --- Promote down? (region -> province/municipality) is not safe without extra info.
+  // Keep selection unchanged.
+  if (current.level === "region" && targetScale !== "region") {
+    return current;
+  }
+
+  // municipality -> province
+  if (current.level === "municipality" && targetScale === "province") {
+    const reg = current.codes?.reg;
+    const prov = current.codes?.prov;
+
+    if (typeof reg !== "number" || typeof prov !== "number") return current;
+
+    return {
+      level: "province" as const,
+      name: current.parent?.province ?? current.name, // best effort label
+      codes: { reg, prov },
+      parent: { region: current.parent?.region, province: current.parent?.province },
+    };
+  }
+
+  // municipality -> region
+  if (current.level === "municipality" && targetScale === "region") {
+    const reg = current.codes?.reg;
+    if (typeof reg !== "number") return current;
+
+    return {
+      level: "region" as const,
+      name: current.parent?.region ?? "Region",
+      codes: { reg },
+      parent: { region: current.parent?.region },
+    };
+  }
+
+  // province -> region
+  if (current.level === "province" && targetScale === "region") {
+    const reg = current.codes?.reg;
+    if (typeof reg !== "number") return current;
+
+    return {
+      level: "region" as const,
+      name: current.parent?.region ?? "Region",
+      codes: { reg },
+      parent: { region: current.parent?.region },
+    };
+  }
+
+  return current;
+}
+
+export default function LayersFiltersPanel() {
+  const { selectedTerritory, setSelectedTerritory } = useSelectedTerritory();
+  const {
+    filters,
+    setTheme,
+    setScale,
+    setTimeResolution,
+    setScaleMode,
+    toggleOverlay,
+  } = useMapFilters();
+
+  // ✅ AUTO mode: scale follows selection level
   useEffect(() => {
     if (filters.scaleMode !== "auto") return;
+
     const nextScale =
       selectedTerritory?.level === "region"
         ? "region"
@@ -50,12 +123,23 @@ export default function LayersFiltersPanel() {
         : null;
 
     if (!nextScale) return;
-
-    // guard: do nothing if already correct
     if (filters.scale === nextScale) return;
 
     setScale(nextScale);
   }, [selectedTerritory?.level, filters.scaleMode, filters.scale, setScale]);
+
+  // ✅ MANUAL mode handler (professional UX)
+  const handleManualScaleChange = (target: "region" | "province" | "municipality") => {
+    setScaleMode("manual");
+
+    // Promote selection if needed (don’t lose user context)
+    const promoted = promoteSelectionToScale(selectedTerritory, target);
+    if (promoted && promoted !== selectedTerritory) {
+      setSelectedTerritory(promoted);
+    }
+
+    setScale(target);
+  };
 
   return (
     <div className="layers-filters-panel">
@@ -106,10 +190,7 @@ export default function LayersFiltersPanel() {
               type="radio"
               name="scale"
               checked={filters.scale === "region"}
-              onChange={() => {
-                setScaleMode("manual");
-                setScale("region");
-              }}
+              onChange={() => handleManualScaleChange("region")}
             />
             <span>Region</span>
           </label>
@@ -119,10 +200,7 @@ export default function LayersFiltersPanel() {
               type="radio"
               name="scale"
               checked={filters.scale === "province"}
-              onChange={() => {
-                setScaleMode("manual");
-                setScale("province");
-              }}
+              onChange={() => handleManualScaleChange("province")}
             />
             <span>Province</span>
           </label>
@@ -132,10 +210,7 @@ export default function LayersFiltersPanel() {
               type="radio"
               name="scale"
               checked={filters.scale === "municipality"}
-              onChange={() => {
-                setScaleMode("manual");
-                setScale("municipality");
-              }}
+              onChange={() => handleManualScaleChange("municipality")}
             />
             <span>Municipality</span>
           </label>
