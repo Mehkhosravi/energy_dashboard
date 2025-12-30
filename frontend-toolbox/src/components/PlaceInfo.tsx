@@ -43,9 +43,9 @@ export default function PlaceInfo() {
   }
 
   return (
-    <div className="selected-place">
+    <div className="place-info">
       {/* Human-readable label derived from level + parent hierarchy */}
-      <span className="selected-place-text">{buildLabel(selectedTerritory)}</span>
+      <span className="place-info-header">{buildLabel(selectedTerritory)}</span>
       <ProvinceProductionChart />
     </div>
   );

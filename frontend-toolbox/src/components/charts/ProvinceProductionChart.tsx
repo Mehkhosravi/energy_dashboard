@@ -7,7 +7,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useSelectedProvince } from "../contexts/SelectedProvinceContext";
+import { useSelectedTerritory } from "../contexts/SelectedTerritoryContext";
 
 type ProvinceProduction = {
   prov_cod: number;
@@ -23,9 +23,8 @@ type ProvinceProduction = {
 const ProvinceProductionChart: React.FC = () => {
   const [data, setData] = useState<ProvinceProduction | null>(null);
   const [loading, setLoading] = useState(false);
-  const { selectedProvince } = useSelectedProvince();
-  const provCod = selectedProvince?.COD_PROV;
-
+  const { selectedTerritory } = useSelectedTerritory();
+  const provCod = selectedTerritory?.codes.prov ?? null;
   useEffect(() => {
     if (provCod == null) {
       setData(null);

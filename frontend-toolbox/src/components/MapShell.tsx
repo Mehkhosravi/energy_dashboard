@@ -158,7 +158,9 @@ export default function MapShell({
 
       <div className="map-main">
         <div className="map-view">{map}</div>
-        <PlaceInfo />
+        <div className="chart-card">
+          <PlaceInfo />
+        </div>
       </div>
     </section>
   );

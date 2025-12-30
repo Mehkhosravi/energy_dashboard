@@ -270,7 +270,7 @@ body {
 }
 
 /* Right info card */
-.map-info {
+.place-info {
   width: 260px;
   max-width: 320px;
   background: #f9fafb;
@@ -283,12 +283,12 @@ body {
   font-size: 13px;
 }
 
-.map-info-header {
+.place-info-header {
   font-weight: 600;
   font-size: 13px;
 }
 
-.map-info-body {
+.place-info-body {
   color: #4b5563;
 }
 

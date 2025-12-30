@@ -63,9 +63,10 @@ const MonthlyChart: React.FC<MonthlyChartProps> = ({
       </div>
     );
   }
-
+  console.log("MonthlyChart data:", data)
   return (
-    <div
+    
+    <div 
       style={{
         width: "100%",
         height: 500,
