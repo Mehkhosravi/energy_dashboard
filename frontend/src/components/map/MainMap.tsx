@@ -288,13 +288,19 @@ export default function MainMap() {
   const mapRef = useRef<LeafletMap | null>(null);
 
   const { selectedTerritory, setSelectedTerritory } = useSelectedTerritory();
-  const { filters, setScale } = useMapFilters();
+  const { filters, setScale, setScaleMode } = useMapFilters();
 
   /**
    * ✅ Map layer level should be controlled by filters.scale only.
    * (Selection should NOT override and cause unexpected reloads.)
    */
   const level: BackendLevel = useMemo(() => normalizeScale(filters.scale), [filters.scale]);
+  console.log("[Map] filters.scale =", filters.scale, "=> level =", level);
+
+
+  useEffect(() => {
+  console.log("[MainMap] filters.scale =", filters.scale, "=> backend level =", level);
+  }, [filters.scale, level]);
 
   const backendDomain = useMemo(() => backendDomainFromTheme(filters.theme), [filters.theme]);
   const backendResolution = useMemo(
@@ -314,20 +320,30 @@ export default function MainMap() {
 
   const [geo, setGeo] = useState<AnyFC | null>(null);
   const [valuesMap, setValuesMap] = useState<Map<number, number>>(new Map());
+  const [layerVersion, setLayerVersion] = useState(0);// to force re-mount on data change
 
   const [loadingGeo, setLoadingGeo] = useState(true);
   const [loadingVals, setLoadingVals] = useState(true);
 
   // --------------------------------
+  // Force layer re-mount on level change
+  // --------------------------------
+  useEffect(() => {
+    setLayerVersion((v) => v + 1);
+  }, [level]);
+  // --------------------------------
   // 1) Load geometry (borders)
   // --------------------------------
   useEffect(() => {
+    setGeo(null); // reset old geo when level changes
+    setValuesMap(new Map()); // reset old values when level changes
     const controller = new AbortController();
 
     (async () => {
       setLoadingGeo(true);
       try {
         const url = `${GEO_API}?level=${level}&simplify=${simplifyFor(level)}`;
+        console.log("[GeoFetch]", url);
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error(`Geo load failed: ${res.status}`);
 
@@ -362,6 +378,7 @@ export default function MainMap() {
         });
 
         const url = `${VALUES_API}?${qs.toString()}`;
+        console.log("[ValuesFetch]", url);
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error(`Values load failed: ${res.status}`);
 
@@ -435,13 +452,15 @@ export default function MainMap() {
     const name = getNameFor(level, p);
     const code = codeForFeature(level, p);
 
-    if (name) {
+    // ✅ Tooltips only for region/province (municipality is too heavy)
+    if (name && level !== "comune") {
       layer.bindTooltip(name, {
-        permanent: level !== "comune",
+        permanent: true,
         direction: "center",
         className: `${level}-label`,
       });
     }
+
 
     layer.on("click", () => {
       if (code == null) return;
@@ -496,9 +515,10 @@ export default function MainMap() {
         <ScaleFromZoom
           activeLevel={level}
           onLevelChange={(lvl) => {
-            // keep compatibility with your context values
-            setScale(lvl === "comune" ? "municipality" : lvl);
-          }}
+         if (filters.scaleMode !== "auto") return; // ✅ don’t fight manual mode
+         setScale(lvl === "comune" ? "municipality" : lvl);
+        }}
+
         />
 
         {/* ✅ Fit when selection exists (search-driven or external selection) */}
@@ -506,7 +526,7 @@ export default function MainMap() {
 
         {geo && (
           <GeoJSON
-            key={`${level}-${backendDomain}-${backendResolution}`} // safer re-mount when data changes
+            key={`${layerVersion}-${level}-${backendDomain}-${backendResolution}`}
             data={geo as any}
             style={style as any}
             onEachFeature={onEachFeature as any}

@@ -34,6 +34,8 @@ function Section({ title, info, defaultOpen = true, children }: SectionProps) {
 export default function LayersFiltersPanel() {
   const { selectedTerritory } = useSelectedTerritory();
   const { filters, setTheme, setScale, setTimeResolution, setScaleMode, toggleOverlay } = useMapFilters();
+  //check the filter values
+  console.log("[Panel] scale =", filters.scale, "mode =", filters.scaleMode);
 
   // ✅ sync panel scale when search selection changes
   useEffect(() => {
