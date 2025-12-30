@@ -33,26 +33,27 @@ function Section({ title, info, defaultOpen = true, children }: SectionProps) {
 
 export default function LayersFiltersPanel() {
   const { selectedTerritory } = useSelectedTerritory();
-  const { filters, setTheme, setScale, setTimeResolution, toggleOverlay } = useMapFilters();
+  const { filters, setTheme, setScale, setTimeResolution, setScaleMode, toggleOverlay } = useMapFilters();
 
   // ✅ sync panel scale when search selection changes
   useEffect(() => {
-  const nextScale =
-    selectedTerritory?.level === "region"
-      ? "region"
-      : selectedTerritory?.level === "province"
-      ? "province"
-      : selectedTerritory?.level === "municipality"
-      ? "municipality"
-      : null;
+    if (filters.scaleMode !== "auto") return;
+    const nextScale =
+      selectedTerritory?.level === "region"
+        ? "region"
+        : selectedTerritory?.level === "province"
+        ? "province"
+        : selectedTerritory?.level === "municipality"
+        ? "municipality"
+        : null;
 
-  if (!nextScale) return;
+    if (!nextScale) return;
 
-  // guard: do nothing if already correct
-  if (filters.scale === nextScale) return;
+    // guard: do nothing if already correct
+    if (filters.scale === nextScale) return;
 
-  setScale(nextScale);
-}, [selectedTerritory?.level, filters.scale, setScale]);
+    setScale(nextScale);
+  }, [selectedTerritory?.level, filters.scaleMode, filters.scale, setScale]);
 
   return (
     <div className="layers-filters-panel">
@@ -103,7 +104,10 @@ export default function LayersFiltersPanel() {
               type="radio"
               name="scale"
               checked={filters.scale === "region"}
-              onChange={() => setScale("region")}
+              onChange={() => {
+                setScaleMode("manual");
+                setScale("region");
+              }}
             />
             <span>Region</span>
           </label>
@@ -113,7 +117,10 @@ export default function LayersFiltersPanel() {
               type="radio"
               name="scale"
               checked={filters.scale === "province"}
-              onChange={() => setScale("province")}
+              onChange={() => {
+                setScaleMode("manual");
+                setScale("province");
+              }}
             />
             <span>Province</span>
           </label>
@@ -123,7 +130,10 @@ export default function LayersFiltersPanel() {
               type="radio"
               name="scale"
               checked={filters.scale === "municipality"}
-              onChange={() => setScale("municipality")}
+              onChange={() => {
+                setScaleMode("manual");
+                setScale("municipality");
+              }}
             />
             <span>Municipality</span>
           </label>

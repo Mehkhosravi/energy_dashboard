@@ -8,6 +8,9 @@ import {
   type TerritoryIndexRow,
 } from "./TerritoryLevel";
 
+import { useMapFilters } from "./contexts/MapFiltersContext";
+
+
 import { useSelectedTerritory } from "./contexts/SelectedTerritoryContext";
 
 type MapShellProps = {
@@ -44,6 +47,8 @@ export default function MapShell({
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState<TerritoryIndexRow[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const { setScale, setScaleMode } = useMapFilters();// NEW: setScaleMode
+
 
   const { setSelectedTerritory, clearSelectedTerritory } = useSelectedTerritory();
 
@@ -92,6 +97,9 @@ export default function MapShell({
       codes,
       parent: t.parent,
     });
+    // zooming auto
+    setScaleMode("auto");
+    setScale(lvl);
   };
 
   const handleBlur = () => {

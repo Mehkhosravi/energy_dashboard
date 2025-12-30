@@ -497,7 +497,7 @@ export default function MainMap() {
           activeLevel={level}
           onLevelChange={(lvl) => {
             // keep compatibility with your context values
-            setScale(lvl === "comune" ? ("comune" as any) : (lvl as any));
+            setScale(lvl === "comune" ? "municipality" : lvl);
           }}
         />
 
