@@ -1,9 +1,7 @@
-import { useState, type ReactNode } from "react";
-
-type DataTheme = "consumption" | "production" | "future_potential";
-type SpatialScale = "region" | "province" | "municipality";
-type TemporalResolution = "annual" | "monthly" | "daily" | "hourly";
-type ConstraintOverlay = "heritage" | "air_quality" | "high_altitude";
+// src/components/LayersFiltersPanel.tsx
+import { useEffect, useState, type ReactNode } from "react";
+import { useSelectedTerritory } from "./contexts/SelectedTerritoryContext";
+import { useMapFilters } from "./contexts/MapFiltersContext";
 
 type SectionProps = {
   title: string;
@@ -34,27 +32,117 @@ function Section({ title, info, defaultOpen = true, children }: SectionProps) {
   );
 }
 
-export default function LayersFiltersPanel() {
-  // defaults:
-  // - theme: consumption
-  // - spatial level: province
-  // - time scale: annual
-  // - constraints: none
-  const [theme, setTheme] = useState<DataTheme>("consumption");
-  const [scale, setScale] = useState<SpatialScale>("province");
-  const [timeResolution, setTimeResolution] =
-    useState<TemporalResolution>("annual");
-  const [overlays, setOverlays] = useState<ConstraintOverlay[]>([]);
+/**
+ * Professional UX behavior:
+ * When user changes the spatial scale manually, keep context by "promoting" selection:
+ *  - municipality -> province / region
+ *  - province -> region
+ *  - region -> (cannot expand), keep selection unchanged
+ */
+function promoteSelectionToScale(
+  current: ReturnType<typeof useSelectedTerritory>["selectedTerritory"],
+  targetScale: "region" | "province" | "municipality"
+) {
+  if (!current) return null;
 
-  const toggleOverlay = (o: ConstraintOverlay) => {
-    setOverlays((prev) =>
-      prev.includes(o) ? prev.filter((v) => v !== o) : [...prev, o]
-    );
+  // already matches
+  if (current.level === targetScale) return current;
+
+  // --- Promote down? (region -> province/municipality) is not safe without extra info.
+  // Keep selection unchanged.
+  if (current.level === "region" && targetScale !== "region") {
+    return current;
+  }
+
+  // municipality -> province
+  if (current.level === "municipality" && targetScale === "province") {
+    const reg = current.codes?.reg;
+    const prov = current.codes?.prov;
+
+    if (typeof reg !== "number" || typeof prov !== "number") return current;
+
+    return {
+      level: "province" as const,
+      name: current.parent?.province ?? current.name, // best effort label
+      codes: { reg, prov },
+      parent: { region: current.parent?.region, province: current.parent?.province },
+    };
+  }
+
+  // municipality -> region
+  if (current.level === "municipality" && targetScale === "region") {
+    const reg = current.codes?.reg;
+    if (typeof reg !== "number") return current;
+
+    return {
+      level: "region" as const,
+      name: current.parent?.region ?? "Region",
+      codes: { reg },
+      parent: { region: current.parent?.region },
+    };
+  }
+
+  // province -> region
+  if (current.level === "province" && targetScale === "region") {
+    const reg = current.codes?.reg;
+    if (typeof reg !== "number") return current;
+
+    return {
+      level: "region" as const,
+      name: current.parent?.region ?? "Region",
+      codes: { reg },
+      parent: { region: current.parent?.region },
+    };
+  }
+
+  return current;
+}
+
+export default function LayersFiltersPanel() {
+  const { selectedTerritory, setSelectedTerritory } = useSelectedTerritory();
+  const {
+    filters,
+    setTheme,
+    setScale,
+    setTimeResolution,
+    setScaleMode,
+    toggleOverlay,
+  } = useMapFilters();
+
+  // ✅ AUTO mode: scale follows selection level
+  useEffect(() => {
+    if (filters.scaleMode !== "auto") return;
+
+    const nextScale =
+      selectedTerritory?.level === "region"
+        ? "region"
+        : selectedTerritory?.level === "province"
+        ? "province"
+        : selectedTerritory?.level === "municipality"
+        ? "municipality"
+        : null;
+
+    if (!nextScale) return;
+    if (filters.scale === nextScale) return;
+
+    setScale(nextScale);
+  }, [selectedTerritory?.level, filters.scaleMode, filters.scale, setScale]);
+
+  // ✅ MANUAL mode handler (professional UX)
+  const handleManualScaleChange = (target: "region" | "province" | "municipality") => {
+    setScaleMode("manual");
+
+    // Promote selection if needed (don’t lose user context)
+    const promoted = promoteSelectionToScale(selectedTerritory, target);
+    if (promoted && promoted !== selectedTerritory) {
+      setSelectedTerritory(promoted);
+    }
+
+    setScale(target);
   };
 
   return (
     <div className="layers-filters-panel">
-      {/* Energy category (single select) */}
       <Section
         title="Energy category"
         info="Choose whether to analyse consumption, production or future potential."
@@ -64,7 +152,7 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="dataTheme"
-              checked={theme === "consumption"}
+              checked={filters.theme === "consumption"}
               onChange={() => setTheme("consumption")}
             />
             <span>Consumption</span>
@@ -74,7 +162,7 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="dataTheme"
-              checked={theme === "production"}
+              checked={filters.theme === "production"}
               onChange={() => setTheme("production")}
             />
             <span>Production</span>
@@ -84,7 +172,7 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="dataTheme"
-              checked={theme === "future_potential"}
+              checked={filters.theme === "future_potential"}
               onChange={() => setTheme("future_potential")}
             />
             <span>Future potential</span>
@@ -92,7 +180,6 @@ export default function LayersFiltersPanel() {
         </div>
       </Section>
 
-      {/* Spatial level */}
       <Section
         title="Spatial level"
         info="Select the territorial aggregation: region, province or municipality."
@@ -102,8 +189,8 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="scale"
-              checked={scale === "region"}
-              onChange={() => setScale("region")}
+              checked={filters.scale === "region"}
+              onChange={() => handleManualScaleChange("region")}
             />
             <span>Region</span>
           </label>
@@ -112,8 +199,8 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="scale"
-              checked={scale === "province"}
-              onChange={() => setScale("province")}
+              checked={filters.scale === "province"}
+              onChange={() => handleManualScaleChange("province")}
             />
             <span>Province</span>
           </label>
@@ -122,15 +209,14 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="scale"
-              checked={scale === "municipality"}
-              onChange={() => setScale("municipality")}
+              checked={filters.scale === "municipality"}
+              onChange={() => handleManualScaleChange("municipality")}
             />
             <span>Municipality</span>
           </label>
         </div>
       </Section>
 
-      {/* Time scale */}
       <Section
         title="Time scale"
         info="Control how the data is aggregated in time (annual, monthly, daily, hourly)."
@@ -140,7 +226,7 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="timeResolution"
-              checked={timeResolution === "annual"}
+              checked={filters.timeResolution === "annual"}
               onChange={() => setTimeResolution("annual")}
             />
             <span>Annual</span>
@@ -150,7 +236,7 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="timeResolution"
-              checked={timeResolution === "monthly"}
+              checked={filters.timeResolution === "monthly"}
               onChange={() => setTimeResolution("monthly")}
             />
             <span>Monthly</span>
@@ -160,7 +246,7 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="timeResolution"
-              checked={timeResolution === "daily"}
+              checked={filters.timeResolution === "daily"}
               onChange={() => setTimeResolution("daily")}
             />
             <span>Daily</span>
@@ -170,7 +256,7 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="timeResolution"
-              checked={timeResolution === "hourly"}
+              checked={filters.timeResolution === "hourly"}
               onChange={() => setTimeResolution("hourly")}
             />
             <span>Hourly</span>
@@ -178,7 +264,6 @@ export default function LayersFiltersPanel() {
         </div>
       </Section>
 
-      {/* Context & constraints */}
       <Section
         title="Context & constraints"
         info="Toggle additional map overlays that highlight constraints or sensitive areas."
@@ -187,7 +272,7 @@ export default function LayersFiltersPanel() {
           <label className="side-option">
             <input
               type="checkbox"
-              checked={overlays.includes("heritage")}
+              checked={filters.overlays.includes("heritage")}
               onChange={() => toggleOverlay("heritage")}
             />
             <span>Cultural heritage zones</span>
@@ -196,7 +281,7 @@ export default function LayersFiltersPanel() {
           <label className="side-option">
             <input
               type="checkbox"
-              checked={overlays.includes("air_quality")}
+              checked={filters.overlays.includes("air_quality")}
               onChange={() => toggleOverlay("air_quality")}
             />
             <span>Air quality risk areas</span>
@@ -205,7 +290,7 @@ export default function LayersFiltersPanel() {
           <label className="side-option">
             <input
               type="checkbox"
-              checked={overlays.includes("high_altitude")}
+              checked={filters.overlays.includes("high_altitude")}
               onChange={() => toggleOverlay("high_altitude")}
             />
             <span>High-altitude zones</span>
