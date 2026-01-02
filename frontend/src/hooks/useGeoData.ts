@@ -1,29 +1,24 @@
 // src/components/maps/hooks/useGeoData.ts
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FeatureCollection, Geometry } from "geojson";
 
 type BackendLevel = "region" | "province" | "comune";
-
 type AnyFC = FeatureCollection<Geometry, any>;
 
 type ValuesRow = {
   cod_reg?: number | string | null;
   reg_cod?: number | string | null;
-
   cod_prov?: number | string | null;
   prov_cod?: number | string | null;
-
   pro_com?: number | string | null;
   mun_cod?: number | string | null;
   cod_com?: number | string | null;
-
   value_mwh: number | string | null;
 };
 
 const GEO_API = "http://localhost:5000/map/territories";
 const VALUES_API = "http://127.0.0.1:5000/charts/values";
 
-// keep simple: only the bits required to prove "data is readable"
 function toNum(x: unknown): number | null {
   if (typeof x === "number" && Number.isFinite(x)) return x;
   if (typeof x === "string") {
@@ -36,7 +31,7 @@ function toNum(x: unknown): number | null {
 function simplifyFor(level: BackendLevel) {
   if (level === "region") return 0.02;
   if (level === "province") return 0.005;
-  return 0.01; // comune (all Italy can be heavy)
+  return 0.01;
 }
 
 function codeFromValuesRow(level: BackendLevel, r: ValuesRow): number | null {
@@ -52,7 +47,7 @@ function valueFromRow(r: ValuesRow): number | null {
 
 export type UseGeoDataArgs = {
   level: BackendLevel;
-  domain: string; // "consumption" | "production" | ...
+  domain: string;
   resolution: "annual" | "monthly" | "hourly";
   year: number;
   scenario: number;
@@ -62,19 +57,18 @@ export type UseGeoDataResult = {
   geo: AnyFC | null;
   valuesMap: Map<number, number>;
 
-  loading: boolean;
+  // phases: control what to show
+  phase: "idle" | "geo_loading" | "geo_ready" | "values_loading" | "ready" | "error";
+
+  loadingGeo: boolean;
+  loadingValues: boolean;
   error: string | null;
 
-  // 👇 what you asked for: easy proof that whole dataset can be read
   debug: {
     geoUrl: string;
     valuesUrl: string;
-
     geoFeatures: number;
-    valuesRows: number;
     valuesMapped: number;
-
-    // a few samples so you can sanity check quickly
     geoSampleProps: any[];
     valuesSamplePairs: Array<{ code: number; value: number }>;
   };
@@ -91,8 +85,13 @@ export function useGeoData({
   const [valuesMap, setValuesMap] = useState<Map<number, number>>(new Map());
 
   const [loadingGeo, setLoadingGeo] = useState(false);
-  const [loadingVals, setLoadingVals] = useState(false);
+  const [loadingValues, setLoadingValues] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [phase, setPhase] = useState<UseGeoDataResult["phase"]>("idle");
+
+  // monotonically increasing request id to ignore stale responses
+  const reqIdRef = useRef(0);
 
   const geoUrl = useMemo(() => {
     const qs = new URLSearchParams({
@@ -113,48 +112,45 @@ export function useGeoData({
     return `${VALUES_API}?${qs.toString()}`;
   }, [level, resolution, year, domain, scenario]);
 
-  // Fetch geometry
+  // ✅ Ordered pipeline: geo -> render -> values -> recolor
   useEffect(() => {
     const controller = new AbortController();
+    const myReqId = ++reqIdRef.current;
 
     (async () => {
+      // reset for a clean run
+      setError(null);
+      setGeo(null);
+      setValuesMap(new Map());
+
       setLoadingGeo(true);
-      setError(null);
+      setLoadingValues(false);
+      setPhase("geo_loading");
+
       try {
-        console.log("[GeoFetch]", geoUrl);
-        const res = await fetch(geoUrl, { signal: controller.signal });
-        if (!res.ok) throw new Error(`Geo load failed: ${res.status}`);
-        const fc = (await res.json()) as AnyFC;
+        console.log("[PIPE] geo:", geoUrl);
+        const resGeo = await fetch(geoUrl, { signal: controller.signal });
+        if (!resGeo.ok) throw new Error(`Geo load failed: ${resGeo.status}`);
+
+        const fc = (await resGeo.json()) as AnyFC;
+
+        // ignore stale responses
+        if (reqIdRef.current !== myReqId) return;
+
         setGeo(fc);
-      } catch (e: any) {
-        if (e?.name !== "AbortError") {
-          console.error(e);
-          setError(e?.message ?? "Geo fetch error");
-          setGeo(null);
-        }
-      } finally {
         setLoadingGeo(false);
-      }
-    })();
+        setPhase("geo_ready");
 
-    return () => controller.abort();
-  }, [geoUrl]);
+        // Now fetch values (after geo is visible)
+        setLoadingValues(true);
+        setPhase("values_loading");
 
-  // Fetch values
-  useEffect(() => {
-    const controller = new AbortController();
+        console.log("[PIPE] values:", valuesUrl);
+        const resVals = await fetch(valuesUrl, { signal: controller.signal });
+        if (!resVals.ok) throw new Error(`Values load failed: ${resVals.status}`);
 
-    (async () => {
-      setLoadingVals(true);
-      setError(null);
-      try {
-        console.log("[ValuesFetch]", valuesUrl);
-        const res = await fetch(valuesUrl, { signal: controller.signal });
-        if (!res.ok) throw new Error(`Values load failed: ${res.status}`);
-
-        const rows = (await res.json()) as ValuesRow[];
+        const rows = (await resVals.json()) as ValuesRow[];
         const m = new Map<number, number>();
-
         for (const r of rows) {
           const code = codeFromValuesRow(level, r);
           const val = valueFromRow(r);
@@ -162,28 +158,31 @@ export function useGeoData({
           m.set(code, val);
         }
 
+        if (reqIdRef.current !== myReqId) return;
+
         setValuesMap(m);
+        setLoadingValues(false);
+        setPhase("ready");
       } catch (e: any) {
-        if (e?.name !== "AbortError") {
-          console.error(e);
-          setError(e?.message ?? "Values fetch error");
-          setValuesMap(new Map());
-        }
-      } finally {
-        setLoadingVals(false);
+        if (e?.name === "AbortError") return;
+        console.error(e);
+
+        if (reqIdRef.current !== myReqId) return;
+
+        setError(e?.message ?? "Fetch error");
+        setLoadingGeo(false);
+        setLoadingValues(false);
+        setPhase("error");
       }
     })();
 
     return () => controller.abort();
-  }, [valuesUrl, level]);
-
-  const loading = loadingGeo || loadingVals;
+  }, [geoUrl, valuesUrl, level]);
 
   const debug = useMemo(() => {
     const geoFeatures = geo?.features?.length ?? 0;
     const valuesMapped = valuesMap.size;
 
-    // for fast sanity checks:
     const geoSampleProps = (geo?.features ?? [])
       .slice(0, 5)
       .map((f: any) => f?.properties ?? {});
@@ -192,18 +191,23 @@ export function useGeoData({
       .slice(0, 5)
       .map(([code, value]) => ({ code, value }));
 
-    // we can only know "valuesRows" if we store it; simplest is infer from mapped size
-    // (mapped size <= rows count)
     return {
       geoUrl,
       valuesUrl,
       geoFeatures,
-      valuesRows: -1, // intentionally omitted to keep state minimal
       valuesMapped,
       geoSampleProps,
       valuesSamplePairs,
     };
   }, [geo, valuesMap, geoUrl, valuesUrl]);
 
-  return { geo, valuesMap, loading, error, debug };
+  return {
+    geo,
+    valuesMap,
+    phase,
+    loadingGeo,
+    loadingValues,
+    error,
+    debug,
+  };
 }

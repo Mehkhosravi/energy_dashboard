@@ -23,7 +23,7 @@ function App() {
   return (
     <Grid
       side={<SidePanelMock />}
-      map={<TestMap />}
+      map={<MainMap />}
     />
   );
 }
