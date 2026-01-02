@@ -43,9 +43,17 @@ export function MapFiltersProvider({ children }: { children: React.ReactNode }) 
   const value = useMemo<MapFiltersContextValue>(() => {
     return {
       filters,
-      setScaleMode: (scaleMode) => setFilters((p) => ({ ...p, scaleMode })),
+      setScaleMode: (scaleMode) => {
+      console.log("[setScaleMode called]", scaleMode);
+      console.trace("[setScaleMode stack]");
+      setFilters((p) => ({ ...p, scaleMode }));
+      },
       setTheme: (theme) => setFilters((p) => ({ ...p, theme })),
-      setScale: (scale) => setFilters((p) => ({ ...p, scale })),
+      setScale: (scale) => {
+      console.log("[setScale called]", scale);
+      console.trace("[setScale stack]");
+      setFilters((p) => ({ ...p, scale }));
+      },
       setTimeResolution: (timeResolution) => setFilters((p) => ({ ...p, timeResolution })),
       toggleOverlay: (o) =>
         setFilters((p) => ({

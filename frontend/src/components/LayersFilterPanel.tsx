@@ -1,7 +1,7 @@
 // src/components/LayersFiltersPanel.tsx
 import { useEffect, useState, type ReactNode } from "react";
 import { useSelectedTerritory } from "./contexts/SelectedTerritoryContext";
-import { useMapFilters } from "./contexts/MapFiltersContext";
+import { useMapFilters, type SpatialScale } from "./contexts/MapFiltersContext";
 
 type SectionProps = {
   title: string;
@@ -128,18 +128,34 @@ export default function LayersFiltersPanel() {
     setScale(nextScale);
   }, [selectedTerritory?.level, filters.scaleMode, filters.scale, setScale]);
 
-  // ✅ MANUAL mode handler (professional UX)
-  const handleManualScaleChange = (target: "region" | "province" | "municipality") => {
-    setScaleMode("manual");
+  // const handleManualScaleChange = (target: "region" | "province" | "municipality") => {
+  // setScaleMode("manual");
 
-    // Promote selection if needed (don’t lose user context)
-    const promoted = promoteSelectionToScale(selectedTerritory, target);
-    if (promoted && promoted !== selectedTerritory) {
-      setSelectedTerritory(promoted);
-    }
+  // const promoted = promoteSelectionToScale(selectedTerritory, target);
 
-    setScale(target);
-  };
+  // // ✅ If scaling UP from municipality but we can't promote (missing codes), CLEAR selection
+  // const scalingUpFromMunicipality =
+  //   selectedTerritory?.level === "municipality" && (target === "province" || target === "region");
+
+  // const promotionFailed = promoted === selectedTerritory;
+
+  // if (scalingUpFromMunicipality && promotionFailed) {
+  // setSelectedTerritory(null);
+  // } else if (promoted && promoted !== selectedTerritory) {
+  //   setSelectedTerritory(promoted);
+  // }
+
+  //   setScale(target);
+  // };
+
+  const handleManualScaleChange = (target: SpatialScale) => {
+  setScaleMode("manual");
+  setSelectedTerritory(null); // ✅ clean slate
+  setScale(target);
+};
+
+
+
 
   return (
     <div className="layers-filters-panel">
@@ -184,6 +200,10 @@ export default function LayersFiltersPanel() {
         title="Spatial level"
         info="Select the territorial aggregation: region, province or municipality."
       >
+        <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>
+        debug: scale={filters.scale} mode={filters.scaleMode}
+        </div>
+
         <div className="side-option-group">
           <label className="side-option">
             <input

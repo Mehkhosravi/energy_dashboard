@@ -57,11 +57,11 @@ function simplifyFor(level: BackendLevel) {
   return 0.01; // comune (still heavy if ALL italy)
 }
 
-const LEVEL_ZOOM = {
-  region: { maxZoom: 8 },
-  province: { maxZoom: 10 },
-  comune: { maxZoom: 13 },
-} as const;
+// const LEVEL_ZOOM = {
+//   region: { maxZoom: 8 },
+//   province: { maxZoom: 10 },
+//   comune: { maxZoom: 13 },
+// } as const;
 
 function quantileBreaks(values: number[], classes: number) {
   const sorted = [...values].filter((v) => Number.isFinite(v)).sort((a, b) => a - b);
@@ -186,10 +186,11 @@ function backendResolutionFromTimeResolution(
 // -----------------------------
 function wantedCodeFromSelection(level: BackendLevel, sel: any): number | null {
   if (!sel?.codes) return null;
-  if (level === "region") return typeof sel.codes.reg === "number" ? sel.codes.reg : null;
-  if (level === "province") return typeof sel.codes.prov === "number" ? sel.codes.prov : null;
-  return typeof sel.codes.mun === "number" ? sel.codes.mun : null;
+  if (level === "region") return toNum(sel.codes.reg);
+  if (level === "province") return toNum(sel.codes.prov);
+  return toNum(sel.codes.mun);
 }
+
 
 function FitToSelection({
   geo,
@@ -245,34 +246,35 @@ function FitToSelection({
 }
 
 // -----------------------------
+// tempporily REMOVED the scale-from-zoom feature
 // Auto switch from zoom (only when nothing selected)
 // -----------------------------
-function ScaleFromZoom({
-  activeLevel,
-  onLevelChange,
-}: {
-  activeLevel: BackendLevel;
-  onLevelChange: (lvl: BackendLevel) => void;
-}) {
-  const map = useMap();
-  const { selectedTerritory } = useSelectedTerritory();
+// function ScaleFromZoom({
+//   activeLevel,
+//   onLevelChange,
+// }: {
+//   activeLevel: BackendLevel;
+//   onLevelChange: (lvl: BackendLevel) => void;
+// }) {
+//   const map = useMap();
+//   const { selectedTerritory } = useSelectedTerritory();
 
-  useEffect(() => {
-    const handler = () => {
-      if (selectedTerritory) return;
-      const z = map.getZoom();
-      const next: BackendLevel = z >= 11 ? "comune" : z >= 8 ? "province" : "region";
-      if (next !== activeLevel) onLevelChange(next);
-    };
+//   useEffect(() => {
+//     const handler = () => {
+//       if (selectedTerritory) return;
+//       const z = map.getZoom();
+//       const next: BackendLevel = z >= 11 ? "comune" : z >= 8 ? "province" : "region";
+//       if (next !== activeLevel) onLevelChange(next);
+//     };
 
-    map.on("zoomend", handler);
-    return () => {
-      map.off("zoomend", handler);
-    };
-  }, [map, activeLevel, onLevelChange, selectedTerritory]);
+//     map.on("zoomend", handler);
+//     return () => {
+//       map.off("zoomend", handler);
+//     };
+//   }, [map, activeLevel, onLevelChange, selectedTerritory]);
 
-  return null;
-}
+//   return null;
+// }
 
 // ✅ ensures mapRef is always set (even before FitToSelection runs)
 function MapRefBinder({ mapRef }: { mapRef: React.MutableRefObject<LeafletMap | null> }) {
@@ -294,6 +296,23 @@ export default function MainMap() {
 
   const level: BackendLevel = useMemo(() => normalizeScale(filters.scale), [filters.scale]);
 
+  // -----------------------------
+  // ✅ KEEP SCALE IN SYNC WITH SELECTION ONLY IN AUTO MODE
+  useEffect(() => {
+    if (filters.scaleMode !== "auto") return;
+    if (!selectedTerritory) return;
+
+    const wantedScale =
+      selectedTerritory.level === "municipality"
+        ? "municipality"
+        : selectedTerritory.level; // "region" | "province"
+
+    if (filters.scale !== wantedScale) {
+      setScale(wantedScale);
+    }
+  }, [filters.scaleMode, selectedTerritory, filters.scale, setScale]);
+
+
   const backendDomain = useMemo(() => backendDomainFromTheme(filters.theme), [filters.theme]);
   const backendResolution = useMemo(
     () => backendResolutionFromTimeResolution(filters.timeResolution),
@@ -310,19 +329,8 @@ export default function MainMap() {
   const [loadingGeo, setLoadingGeo] = useState(true);
   const [loadingVals, setLoadingVals] = useState(true);
 
-  // ✅ IMPORTANT: do NOT allow "all italy comuni" load without a parent scope
-  const comuneScope = useMemo(() => {
-    if (level !== "comune") return null;
-
-    const prov = selectedTerritory?.codes?.prov;
-    const reg = selectedTerritory?.codes?.reg;
-
-    // require at least one
-    if (typeof prov === "number") return { prov };
-    if (typeof reg === "number") return { reg };
-
-    return null;
-  }, [level, selectedTerritory]);
+  // ✅ You want ALL comuni: remove scope requirement
+  // (No comuneScope, no showComuneGuard)
 
   // force clean remount when level/domain/res changes (prevents old layer sticking)
   useEffect(() => {
@@ -344,13 +352,6 @@ export default function MainMap() {
     const controller = new AbortController();
 
     (async () => {
-      // ✅ Skip loading all comuni if no scope (prevents UI freeze)
-      if (level === "comune" && !comuneScope) {
-        setGeo(null);
-        setLoadingGeo(false);
-        return;
-      }
-
       setLoadingGeo(true);
       try {
         const qs = new URLSearchParams({
@@ -358,10 +359,7 @@ export default function MainMap() {
           simplify: String(simplifyFor(level)),
         });
 
-        // If your backend supports these params later, it will just work.
-        if (level === "comune" && comuneScope?.prov) qs.set("prov_code", String(comuneScope.prov));
-        if (level === "comune" && comuneScope?.reg) qs.set("reg_code", String(comuneScope.reg));
-
+        // ✅ no prov_code/reg_code params (load ALL comuni)
         const url = `${GEO_API}?${qs.toString()}`;
         console.log("[GeoFetch]", url);
 
@@ -378,19 +376,13 @@ export default function MainMap() {
     })();
 
     return () => controller.abort();
-  }, [level, comuneScope]);
+  }, [level]);
 
-  // 2) Values fetch (same scope rule for comuni)
+  // 2) Values fetch
   useEffect(() => {
     const controller = new AbortController();
 
     (async () => {
-      if (level === "comune" && !comuneScope) {
-        setValuesMap(new Map());
-        setLoadingVals(false);
-        return;
-      }
-
       setLoadingVals(true);
       try {
         const qs = new URLSearchParams({
@@ -401,9 +393,7 @@ export default function MainMap() {
           scenario: String(scenario),
         });
 
-        if (level === "comune" && comuneScope?.prov) qs.set("prov_code", String(comuneScope.prov));
-        if (level === "comune" && comuneScope?.reg) qs.set("reg_code", String(comuneScope.reg));
-
+        // ✅ no prov_code/reg_code params (load ALL comuni values)
         const url = `${VALUES_API}?${qs.toString()}`;
         console.log("[ValuesFetch]", url);
 
@@ -437,7 +427,7 @@ export default function MainMap() {
     })();
 
     return () => controller.abort();
-  }, [level, backendDomain, backendResolution, year, scenario, comuneScope]);
+  }, [level, backendDomain, backendResolution, year, scenario]);
 
   const breaks = useMemo(() => {
     const vals = Array.from(valuesMap.values());
@@ -477,12 +467,14 @@ export default function MainMap() {
 
     // Tooltips are expensive: skip for comuni
     if (name && level !== "comune") {
-      layer.bindTooltip(name, { permanent: true, direction: "center", className: `${level}-label` });
+      layer.bindTooltip(name, {
+        permanent: true,
+        direction: "center",
+        className: `${level}-label`,
+      });
     }
 
-    // Click binding for comuni is also expensive; keep if you want, but this is safer:
-    if (level === "comune") return;
-
+    // ✅ Enable click selection for all levels (including comuni)
     layer.on("click", () => {
       if (code == null) return;
 
@@ -491,6 +483,20 @@ export default function MainMap() {
       } else if (level === "province") {
         const reg = getRegionCode(p) ?? selectedTerritory?.codes?.reg ?? 0;
         setSelectedTerritory({ level: "province", name, codes: { reg, prov: code } });
+      } else if (level === "comune") {
+        // For comuni, reg/prov might be missing from props; keep best-effort
+        const reg = getRegionCode(p) ?? selectedTerritory?.codes?.reg ?? 0;
+        const prov = getProvinceCode(p) ?? selectedTerritory?.codes?.prov;
+
+        setSelectedTerritory({
+          level: "municipality",
+          name,
+          codes: { reg, prov, mun: code },
+          parent: {
+            region: selectedTerritory?.parent?.region,
+            province: selectedTerritory?.parent?.province,
+          },
+        });
       }
 
       mapRef.current?.fitBounds(layer.getBounds(), {
@@ -502,11 +508,9 @@ export default function MainMap() {
 
   const loading = loadingGeo || loadingVals;
 
-  const showComuneGuard = level === "comune" && !comuneScope;
-
   return (
     <div style={{ height: "100%", width: "100%", position: "relative" }}>
-      {(loading || showComuneGuard) && (
+      {loading && (
         <div
           style={{
             position: "absolute",
@@ -517,46 +521,16 @@ export default function MainMap() {
             justifyContent: "center",
             background: "rgba(255,255,255,0.85)",
             fontSize: 14,
-            pointerEvents: "auto",
+            pointerEvents: "none",
             padding: 16,
             textAlign: "center",
           }}
         >
-          {showComuneGuard ? (
-            <div>
-              <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                Municipality layer needs a scope
-              </div>
-              <div style={{ opacity: 0.8, marginBottom: 10 }}>
-                Select a province (or region) first, then switch to “Municipality”.
-                This avoids loading the whole country at once.
-              </div>
-              <button
-                type="button"
-                onClick={() => setScale("province")}
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: 8,
-                  border: "1px solid #ccc",
-                  background: "white",
-                  cursor: "pointer",
-                }}
-              >
-                Back to Province
-              </button>
-            </div>
-          ) : (
-            <div>Loading…</div>
-          )}
+          <div>Loading…</div>
         </div>
       )}
 
-      <MapContainer
-        center={[41.9, 12.5]}
-        zoom={6}
-        style={{ height: "100%", width: "100%" }}
-        preferCanvas={true}
-      >
+      <MapContainer center={[41.9, 12.5]} zoom={6} style={{ height: "100%", width: "100%" }} preferCanvas>
         <MapRefBinder mapRef={mapRef} />
 
         <TileLayer
@@ -564,14 +538,12 @@ export default function MainMap() {
           attribution="Tiles © Esri"
         />
 
-        <ScaleFromZoom
-          activeLevel={level}
-          onLevelChange={(lvl) => setScale(lvl === "comune" ? "municipality" : lvl)}
-        />
+        {/* temporily removed the scale-from-zoom feature */}
+        {/* <ScaleFromZoom activeLevel={level} onLevelChange={(lvl) => setScale(lvl === "comune" ? "municipality" : lvl)} /> */}
 
         <FitToSelection geo={geo} level={level} mapRef={mapRef} />
 
-        {geo && !showComuneGuard && (
+        {geo && (
           <GeoJSON
             key={`${layerVersion}-${level}-${backendDomain}-${backendResolution}`}
             data={geo as any}

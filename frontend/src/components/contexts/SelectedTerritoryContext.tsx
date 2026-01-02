@@ -1,10 +1,7 @@
 // src/components/contexts/SelectedTerritoryContext.tsx
-//
-// Default selection: Province of Torino
 
 import { createContext, useContext, useMemo, useState } from "react";
 import type { TerritoryLevel } from "../TerritoryLevel";
-import { TERRITORIES } from "../TerritoryLevel";
 
 export type SelectedTerritory = {
   level: TerritoryLevel;
@@ -30,30 +27,14 @@ const SelectedTerritoryContext = createContext<
   SelectedTerritoryContextValue | undefined
 >(undefined);
 
-// ✅ Exact match for your Torino entry
-function getDefaultTorinoProvince(): SelectedTerritory | null {
-  const torino = TERRITORIES.find(
-    (t) => t.level === "province" && t.name === "Torino"
-  );
-
-  if (!torino) return null;
-
-  return {
-    level: torino.level,
-    name: torino.name,
-    codes: torino.codes,
-    parent: torino.parent,
-  };
-}
-
 export function SelectedTerritoryProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // ✅ Default is Torino province (codes.reg=1, codes.prov=1)
+  // ✅ no default
   const [selectedTerritory, setSelectedTerritory] =
-    useState<SelectedTerritory | null>(() => getDefaultTorinoProvince());
+    useState<SelectedTerritory | null>(null);
 
   const value = useMemo(
     () => ({

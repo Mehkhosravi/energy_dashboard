@@ -2,7 +2,7 @@
 import ProvinceConsumptionMap from "./components/map/ProvinceConsumptionMap";
 import Grid from "./components/Grid";
 import MainMap from "./components/map/MainMap";
-import DefaultMap from "./components/map/DefaultMap";
+import TestMap from "./components/map/testMap";
 
 
 
@@ -23,7 +23,7 @@ function App() {
   return (
     <Grid
       side={<SidePanelMock />}
-      map={<MainMap />}
+      map={<TestMap />}
     />
   );
 }
