@@ -5,15 +5,11 @@ export type SpatialScale = "region" | "province" | "municipality";
 export type TemporalResolution = "annual" | "monthly" | "daily" | "hourly";
 export type ConstraintOverlay = "heritage" | "air_quality" | "high_altitude";
 
-//handle the auto mode vs user manual selection//
-export type ScaleMode = "auto" | "manual";
-
 export type MapFilters = {
   theme: DataTheme;
   scale: SpatialScale;
   timeResolution: TemporalResolution;
   overlays: ConstraintOverlay[];
-  scaleMode: ScaleMode; // New field for scale mode
 };
 
 type MapFiltersContextValue = {
@@ -24,7 +20,6 @@ type MapFiltersContextValue = {
   toggleOverlay: (o: ConstraintOverlay) => void;
   setOverlays: (o: ConstraintOverlay[]) => void;
   resetFilters: () => void;
-  setScaleMode: (m: ScaleMode) => void; // New setter for scale mode
 };
 
 const DEFAULT_FILTERS: MapFilters = {
@@ -32,7 +27,6 @@ const DEFAULT_FILTERS: MapFilters = {
   scale: "province",
   timeResolution: "annual",
   overlays: [],
-  scaleMode: "auto",
 };
 
 const Ctx = createContext<MapFiltersContextValue | undefined>(undefined);
@@ -43,11 +37,6 @@ export function MapFiltersProvider({ children }: { children: React.ReactNode }) 
   const value = useMemo<MapFiltersContextValue>(() => {
     return {
       filters,
-      setScaleMode: (scaleMode) => {
-      console.log("[setScaleMode called]", scaleMode);
-      console.trace("[setScaleMode stack]");
-      setFilters((p) => ({ ...p, scaleMode }));
-      },
       setTheme: (theme) => setFilters((p) => ({ ...p, theme })),
       setScale: (scale) => {
       console.log("[setScale called]", scale);

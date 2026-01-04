@@ -33,8 +33,15 @@ export function SelectedTerritoryProvider({
   children: React.ReactNode;
 }) {
   // ✅ no default
-  const [selectedTerritory, setSelectedTerritory] =
+  const [selectedTerritory, setSelectedTerritoryState] =
     useState<SelectedTerritory | null>(null);
+
+  // wrap setter so we can debug state transitions
+  const setSelectedTerritory = (t: SelectedTerritory | null) => {
+    console.debug("[SelectedTerritory] setRequested", { before: selectedTerritory, after: t });
+    console.trace("[SelectedTerritory] setRequested stack trace");
+    setSelectedTerritoryState(t);
+  };
 
   const value = useMemo(
     () => ({

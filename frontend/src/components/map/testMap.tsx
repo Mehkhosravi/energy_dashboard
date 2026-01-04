@@ -5,7 +5,7 @@ import "leaflet/dist/leaflet.css";
 import type { Feature, Geometry } from "geojson";
 
 import Legend from "../Legend";
-import { useGeoData } from "../../hooks/useGeoData";
+import { useGeoData } from "./hooks/useGeoData";
 
 // ---------- Types ----------
 type BackendLevel = "region" | "province" | "comune";
@@ -116,7 +116,7 @@ export default function TestMap() {
   const year = 2019;
   const scenario = 0;
 
-  const { geo, valuesMap, loading, error, debug } = useGeoData({
+  const { geo, valuesMap, loadingGeo, error, debug } = useGeoData({
     level,
     domain,
     resolution,
@@ -210,7 +210,7 @@ export default function TestMap() {
         </div>
 
         <div style={{ marginTop: 10, lineHeight: 1.4 }}>
-          <div>loading: {String(loading)}</div>
+          <div>loading: {String(loadingGeo)}</div>
           <div>error: {error ?? "—"}</div>
           <div>geo features: {debug.geoFeatures}</div>
           <div>values mapped: {debug.valuesMapped}</div>
@@ -239,7 +239,7 @@ export default function TestMap() {
       </div>
 
       {/* Loading overlay */}
-      {loading && (
+      {loadingGeo && (
         <div
           style={{
             position: "absolute",

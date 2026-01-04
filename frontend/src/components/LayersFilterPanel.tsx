@@ -1,6 +1,5 @@
 // src/components/LayersFiltersPanel.tsx
-import { useEffect, useState, type ReactNode } from "react";
-import { useSelectedTerritory } from "./contexts/SelectedTerritoryContext";
+import { useState, type ReactNode } from "react";
 import { useMapFilters, type SpatialScale } from "./contexts/MapFiltersContext";
 
 type SectionProps = {
@@ -32,130 +31,24 @@ function Section({ title, info, defaultOpen = true, children }: SectionProps) {
   );
 }
 
-/**
- * Professional UX behavior:
- * When user changes the spatial scale manually, keep context by "promoting" selection:
- *  - municipality -> province / region
- *  - province -> region
- *  - region -> (cannot expand), keep selection unchanged
- */
-function promoteSelectionToScale(
-  current: ReturnType<typeof useSelectedTerritory>["selectedTerritory"],
-  targetScale: "region" | "province" | "municipality"
-) {
-  if (!current) return null;
-
-  // already matches
-  if (current.level === targetScale) return current;
-
-  // --- Promote down? (region -> province/municipality) is not safe without extra info.
-  // Keep selection unchanged.
-  if (current.level === "region" && targetScale !== "region") {
-    return current;
-  }
-
-  // municipality -> province
-  if (current.level === "municipality" && targetScale === "province") {
-    const reg = current.codes?.reg;
-    const prov = current.codes?.prov;
-
-    if (typeof reg !== "number" || typeof prov !== "number") return current;
-
-    return {
-      level: "province" as const,
-      name: current.parent?.province ?? current.name, // best effort label
-      codes: { reg, prov },
-      parent: { region: current.parent?.region, province: current.parent?.province },
-    };
-  }
-
-  // municipality -> region
-  if (current.level === "municipality" && targetScale === "region") {
-    const reg = current.codes?.reg;
-    if (typeof reg !== "number") return current;
-
-    return {
-      level: "region" as const,
-      name: current.parent?.region ?? "Region",
-      codes: { reg },
-      parent: { region: current.parent?.region },
-    };
-  }
-
-  // province -> region
-  if (current.level === "province" && targetScale === "region") {
-    const reg = current.codes?.reg;
-    if (typeof reg !== "number") return current;
-
-    return {
-      level: "region" as const,
-      name: current.parent?.region ?? "Region",
-      codes: { reg },
-      parent: { region: current.parent?.region },
-    };
-  }
-
-  return current;
-}
-
 export default function LayersFiltersPanel() {
-  const { selectedTerritory, setSelectedTerritory } = useSelectedTerritory();
   const {
     filters,
     setTheme,
     setScale,
     setTimeResolution,
-    setScaleMode,
     toggleOverlay,
   } = useMapFilters();
 
-  // ✅ AUTO mode: scale follows selection level
-  useEffect(() => {
-    if (filters.scaleMode !== "auto") return;
-
-    const nextScale =
-      selectedTerritory?.level === "region"
-        ? "region"
-        : selectedTerritory?.level === "province"
-        ? "province"
-        : selectedTerritory?.level === "municipality"
-        ? "municipality"
-        : null;
-
-    if (!nextScale) return;
-    if (filters.scale === nextScale) return;
-
-    setScale(nextScale);
-  }, [selectedTerritory?.level, filters.scaleMode, filters.scale, setScale]);
-
-  // const handleManualScaleChange = (target: "region" | "province" | "municipality") => {
-  // setScaleMode("manual");
-
-  // const promoted = promoteSelectionToScale(selectedTerritory, target);
-
-  // // ✅ If scaling UP from municipality but we can't promote (missing codes), CLEAR selection
-  // const scalingUpFromMunicipality =
-  //   selectedTerritory?.level === "municipality" && (target === "province" || target === "region");
-
-  // const promotionFailed = promoted === selectedTerritory;
-
-  // if (scalingUpFromMunicipality && promotionFailed) {
-  // setSelectedTerritory(null);
-  // } else if (promoted && promoted !== selectedTerritory) {
-  //   setSelectedTerritory(promoted);
-  // }
-
-  //   setScale(target);
-  // };
+  // Note: removed automatic sync with SelectedTerritory to avoid coupling between selection and filters.
 
   const handleManualScaleChange = (target: SpatialScale) => {
-  setScaleMode("manual");
-  setSelectedTerritory(null); // ✅ clean slate
-  setScale(target);
-};
+    setScale(target);
+  };
 
-
-
+  const handleScaleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleManualScaleChange(e.target.value as SpatialScale);
+  };
 
   return (
     <div className="layers-filters-panel">
@@ -201,7 +94,7 @@ export default function LayersFiltersPanel() {
         info="Select the territorial aggregation: region, province or municipality."
       >
         <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>
-        debug: scale={filters.scale} mode={filters.scaleMode}
+          debug: scale={filters.scale}
         </div>
 
         <div className="side-option-group">
@@ -209,8 +102,9 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="scale"
+              value="region"
               checked={filters.scale === "region"}
-              onChange={() => handleManualScaleChange("region")}
+              onChange={handleScaleChange}
             />
             <span>Region</span>
           </label>
@@ -219,8 +113,9 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="scale"
+              value="province"
               checked={filters.scale === "province"}
-              onChange={() => handleManualScaleChange("province")}
+              onChange={handleScaleChange}
             />
             <span>Province</span>
           </label>
@@ -229,8 +124,9 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="scale"
+              value="municipality"
               checked={filters.scale === "municipality"}
-              onChange={() => handleManualScaleChange("municipality")}
+              onChange={handleScaleChange}
             />
             <span>Municipality</span>
           </label>

@@ -1,5 +1,4 @@
 
-import ProvinceConsumptionMap from "./components/map/ProvinceConsumptionMap";
 import Grid from "./components/Grid";
 import MainMap from "./components/map/MainMap";
 import TestMap from "./components/map/testMap";

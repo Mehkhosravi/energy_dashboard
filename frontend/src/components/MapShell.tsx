@@ -1,5 +1,5 @@
 // src/components/MapShell.tsx
-import { type ReactNode, useState } from "react";
+import React, { type ReactNode, useState } from "react";
 import PlaceInfo from "./PlaceInfo";
 
 import {
@@ -7,8 +7,6 @@ import {
   formatTerritoryMeta,
   type TerritoryIndexRow,
 } from "./TerritoryLevel";
-
-import { useMapFilters } from "./contexts/MapFiltersContext";
 
 
 import { useSelectedTerritory } from "./contexts/SelectedTerritoryContext";
@@ -19,9 +17,6 @@ type MapShellProps = {
   onTerritorySelected?: (territory: TerritoryIndexRow) => void;
 };
 
-// If your app uses "municipality" in the index, keep it.
-// MainMap I gave you expects "comune". If your context is still "municipality",
-// keep it here; otherwise switch to "comune".
 type AppLevel = "region" | "province" | "municipality";
 
 function normalizeLevel(level: TerritoryIndexRow["level"]): AppLevel {
@@ -47,8 +42,6 @@ export default function MapShell({
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState<TerritoryIndexRow[]>([]);
   const [showResults, setShowResults] = useState(false);
-  const { setScale, setScaleMode } = useMapFilters();// NEW: setScaleMode
-
 
   const { setSelectedTerritory, clearSelectedTerritory } = useSelectedTerritory();
 
@@ -69,11 +62,9 @@ export default function MapShell({
 
     const lvl = normalizeLevel(t.level);
 
-    // Pull codes from the index; if missing, fall back to parent codes.
-    // IMPORTANT: reg MUST exist because your context type requires it.
     const reg =
       toNum(t.codes?.reg) ??
-      toNum((t.parent as any)?.codes?.reg) ?? // if your parent includes codes
+      toNum((t.parent as any)?.codes?.reg) ??
       0;
 
     const prov =
@@ -83,8 +74,6 @@ export default function MapShell({
 
     const mun = toNum(t.codes?.mun) ?? null;
 
-    // Build codes object EXACTLY matching your context type:
-    // { reg: number; prov?: number; mun?: number }
     const codes: { reg: number; prov?: number; mun?: number } = {
       reg,
       ...(lvl !== "region" && prov != null ? { prov } : {}),
@@ -97,9 +86,8 @@ export default function MapShell({
       codes,
       parent: t.parent,
     });
-    // zooming auto
-    setScaleMode("auto");
-    setScale(lvl);
+
+
   };
 
   const handleBlur = () => {

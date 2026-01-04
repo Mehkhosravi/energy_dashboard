@@ -28,6 +28,24 @@ function toNum(x: unknown): number | null {
   return null;
 }
 
+function normalizeLevel(level: unknown): BackendLevel | null {
+  if (level === "region" || level === "province" || level === "comune") return level;
+
+  // common frontend label → backend label
+  if (level === "municipality") return "comune";
+
+  // allow string-ish values
+  if (typeof level === "string") {
+    const v = level.trim().toLowerCase();
+    if (v === "region") return "region";
+    if (v === "province") return "province";
+    if (v === "comune") return "comune";
+    if (v === "municipality") return "comune";
+  }
+
+  return null;
+}
+
 function simplifyFor(level: BackendLevel) {
   if (level === "region") return 0.02;
   if (level === "province") return 0.005;
@@ -46,7 +64,9 @@ function valueFromRow(r: ValuesRow): number | null {
 }
 
 export type UseGeoDataArgs = {
-  level: BackendLevel;
+  // 🔥 changed: tolerate runtime undefined / UI labels
+  level: BackendLevel | "municipality" | string | null | undefined;
+
   domain: string;
   resolution: "annual" | "monthly" | "hourly";
   year: number;
@@ -57,7 +77,6 @@ export type UseGeoDataResult = {
   geo: AnyFC | null;
   valuesMap: Map<number, number>;
 
-  // phases: control what to show
   phase: "idle" | "geo_loading" | "geo_ready" | "values_loading" | "ready" | "error";
 
   loadingGeo: boolean;
@@ -81,6 +100,9 @@ export function useGeoData({
   year,
   scenario,
 }: UseGeoDataArgs): UseGeoDataResult {
+  const normalizedLevel = useMemo(() => normalizeLevel(level), [level]);
+  const enabled = normalizedLevel != null;
+
   const [geo, setGeo] = useState<AnyFC | null>(null);
   const [valuesMap, setValuesMap] = useState<Map<number, number>>(new Map());
 
@@ -94,31 +116,45 @@ export function useGeoData({
   const reqIdRef = useRef(0);
 
   const geoUrl = useMemo(() => {
+    if (!normalizedLevel) return "";
     const qs = new URLSearchParams({
-      level,
-      simplify: String(simplifyFor(level)),
+      level: normalizedLevel,
+      simplify: String(simplifyFor(normalizedLevel)),
     });
     return `${GEO_API}?${qs.toString()}`;
-  }, [level]);
+  }, [normalizedLevel]);
 
   const valuesUrl = useMemo(() => {
+    if (!normalizedLevel) return "";
     const qs = new URLSearchParams({
-      level,
+      level: normalizedLevel,
       resolution,
       year: String(year),
       domain,
       scenario: String(scenario),
     });
     return `${VALUES_API}?${qs.toString()}`;
-  }, [level, resolution, year, domain, scenario]);
+  }, [normalizedLevel, resolution, year, domain, scenario]);
 
   // ✅ Ordered pipeline: geo -> render -> values -> recolor
   useEffect(() => {
+    // 🔥 HARD GUARD: never fetch with invalid level
+    if (!enabled) {
+      // Do not nuke existing data; just go idle.
+      setLoadingGeo(false);
+      setLoadingValues(false);
+      setPhase("idle");
+      setError(null);
+
+      console.warn("[PIPE] skip: invalid level", { level, normalizedLevel });
+      return;
+    }
+
     const controller = new AbortController();
     const myReqId = ++reqIdRef.current;
 
     (async () => {
-      // reset for a clean run
+      // reset for a clean run (only when enabled)
       setError(null);
       setGeo(null);
       setValuesMap(new Map());
@@ -151,8 +187,9 @@ export function useGeoData({
 
         const rows = (await resVals.json()) as ValuesRow[];
         const m = new Map<number, number>();
+
         for (const r of rows) {
-          const code = codeFromValuesRow(level, r);
+          const code = codeFromValuesRow(normalizedLevel, r);
           const val = valueFromRow(r);
           if (code == null || val == null) continue;
           m.set(code, val);
@@ -177,7 +214,8 @@ export function useGeoData({
     })();
 
     return () => controller.abort();
-  }, [geoUrl, valuesUrl, level]);
+    // important: geoUrl/valuesUrl already encode normalizedLevel
+  }, [enabled, geoUrl, valuesUrl, level, normalizedLevel]);
 
   const debug = useMemo(() => {
     const geoFeatures = geo?.features?.length ?? 0;
