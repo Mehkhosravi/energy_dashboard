@@ -93,10 +93,6 @@ export default function LayersFiltersPanel() {
         title="Spatial level"
         info="Select the territorial aggregation: region, province or municipality."
       >
-        <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>
-          debug: scale={filters.scale}
-        </div>
-
         <div className="side-option-group">
           <label className="side-option">
             <input

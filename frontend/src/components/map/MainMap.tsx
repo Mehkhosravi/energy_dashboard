@@ -15,7 +15,24 @@ import {
 } from "./hooks/mapFiltersToGeoArgs";
 
 // ---------- Minimal helpers (same as TestMap) ----------
-const PALETTE = ["#FFFFB2", "#FECC5C", "#FD8D3C", "#F03B20", "#BD0026", "#800026"];
+const CONSUMPTION_PALETTE = [
+  "#FEE5D9",
+  "#FCBBA1",
+  "#FC9272",
+  "#FB6A4A",
+  "#DE2D26",
+  "#A50F15",
+];
+
+const PRODUCTION_PALETTE = [
+  "#FFFFE5",
+  "#F7FCB9",
+  "#C2E699",
+  "#78C679",
+  "#31A354",
+  "#006837",
+];
+
 
 function toNum(x: unknown): number | null {
   if (typeof x === "number" && Number.isFinite(x)) return x;
@@ -114,8 +131,16 @@ export default function MainMap() {
   const { filters } = useMapFilters();
 
   // ✅ SINGLE SOURCE OF TRUTH (like TestMap)
+
+
   const level = useMemo(() => scaleToBackendLevel(filters.scale), [filters.scale]);
-  const domain = useMemo(() => themeToBackendDomain(filters.theme), [filters.theme]);
+  const domain = useMemo(() => themeToBackendDomain(filters.theme), [filters.theme]); 
+  const palette = useMemo(() => {
+    if (domain === "production" || domain === "future_production") {
+      return PRODUCTION_PALETTE;
+    }
+      return CONSUMPTION_PALETTE;
+  }, [domain]);
   const resolution = useMemo(
     () => timeResolutionToBackendResolution(filters.timeResolution),
     [filters.timeResolution]
@@ -135,9 +160,8 @@ export default function MainMap() {
 
   const breaks = useMemo(() => {
     const vals = Array.from(valuesMap.values());
-    return quantileBreaks(vals, PALETTE.length);
-  }, [valuesMap]);
-
+    return quantileBreaks(vals, palette.length);
+  }, [valuesMap, palette]);
   const style = (feature: any) => {
     const p = feature?.properties ?? {};
     const code = codeForFeature(level, p);
@@ -147,7 +171,7 @@ export default function MainMap() {
       color: "rgba(0,0,0,0.25)",
       weight: level === "comune" ? 0.35 : 1,
       fillOpacity: 0.75,
-      fillColor: colorForValue(v, breaks, PALETTE),
+      fillColor: colorForValue(v, breaks, palette),
     };
   };
 
@@ -229,7 +253,7 @@ export default function MainMap() {
           />
         )}
 
-        {breaks.length > 1 && <Legend breaks={breaks} colors={PALETTE} />}
+        {breaks.length > 1 && <Legend breaks={breaks} colors={palette} />}
       </MapContainer>
     </div>
   );
