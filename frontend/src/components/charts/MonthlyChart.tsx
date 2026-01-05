@@ -1,8 +1,9 @@
 // src/components/ProvinceProductionMonthlyChart.tsx
-// MonthlyChart.tsx
-import type { CombinedChartPoint } from "../../hooks/useProvinceMonthlyData";
+// (you can keep the filename, but now it's territory-generic)
 
 import React from "react";
+import type { CombinedChartPoint } from "../../hooks/useMonthlyData";
+
 import {
   ComposedChart,
   Bar,
@@ -22,25 +23,31 @@ function formatValueGWh(value: number): string {
   return `${value.toFixed(2)} ${UNIT_LABEL}`;
 }
 
+type TerritoryLabel = "region" | "province" | "municipality";
+
 interface MonthlyChartProps {
   data: CombinedChartPoint[];
   loading: boolean;
   error: string | null;
-  provinceName?: string | null;
-  hasProvince: boolean;
+
+  // ✅ generic territory props
+  territoryName?: string | null;
+  territoryLabel: TerritoryLabel;
+  hasTerritory: boolean;
 }
 
 const MonthlyChart: React.FC<MonthlyChartProps> = ({
   data,
   loading,
   error,
-  provinceName,
-  hasProvince,
+  territoryName,
+  territoryLabel,
+  hasTerritory,
 }) => {
-  if (!hasProvince) {
+  if (!hasTerritory) {
     return (
       <div className="chart-placeholder">
-        Select a province to see monthly production and consumption.
+        Select a {territoryLabel} to see monthly production and consumption.
       </div>
     );
   }
@@ -60,7 +67,8 @@ const MonthlyChart: React.FC<MonthlyChartProps> = ({
   if (!data.length) {
     return (
       <div className="chart-placeholder">
-        No data available for this province.
+        No data available for this {territoryLabel}
+        {territoryName ? ` (${territoryName})` : ""}.
       </div>
     );
   }
@@ -156,84 +164,17 @@ const MonthlyChart: React.FC<MonthlyChartProps> = ({
             <Legend verticalAlign="top" align="center" height={80} />
 
             {/* STACKED Bar – production */}
-            <Bar
-              dataKey="solar"
-              stackId="prod"
-              name="Solar production"
-              fill="#facc15"
-              stroke="#facc15"
-              barSize={20}
-            />
-            <Bar
-              dataKey="wind"
-              stackId="prod"
-              name="Wind production"
-              fill="#22c55e"
-              stroke="#22c55e"
-              barSize={20}
-            />
-            <Bar
-              dataKey="hydroelectric"
-              stackId="prod"
-              name="Hydroelectric production"
-              fill="#0ea5e9"
-              stroke="#0ea5e9"
-              barSize={20}
-            />
-            <Bar
-              dataKey="geothermal"
-              stackId="prod"
-              name="Geothermal production"
-              fill="#8b5cf6"
-              stroke="#8b5cf6"
-              barSize={20}
-            />
-            <Bar
-              dataKey="biomass"
-              stackId="prod"
-              name="Biomass production"
-              fill="#92400e"
-              stroke="#92400e"
-              barSize={20}
-            />
+            <Bar dataKey="solar" stackId="prod" name="Solar production" fill="#facc15" stroke="#facc15" barSize={20} />
+            <Bar dataKey="wind" stackId="prod" name="Wind production" fill="#22c55e" stroke="#22c55e" barSize={20} />
+            <Bar dataKey="hydroelectric" stackId="prod" name="Hydroelectric production" fill="#0ea5e9" stroke="#0ea5e9" barSize={20} />
+            <Bar dataKey="geothermal" stackId="prod" name="Geothermal production" fill="#8b5cf6" stroke="#8b5cf6" barSize={20} />
+            <Bar dataKey="biomass" stackId="prod" name="Biomass production" fill="#92400e" stroke="#92400e" barSize={20} />
 
             {/* Sector lines – consumption */}
-            <Line
-              type="monotone"
-              dataKey="residential"
-              name="Residential consumption"
-              stroke="#f7d22d"
-              strokeWidth={2}
-              dot={{ r: 2 }}
-              legendType="line"
-            />
-            <Line
-              type="monotone"
-              dataKey="primary"
-              name="Primary consumption"
-              stroke="#14b8a6"
-              strokeWidth={2}
-              dot={{ r: 2 }}
-              legendType="line"
-            />
-            <Line
-              type="monotone"
-              dataKey="secondary"
-              name="Secondary consumption"
-              stroke="#f97316"
-              strokeWidth={2}
-              dot={{ r: 2 }}
-              legendType="line"
-            />
-            <Line
-              type="monotone"
-              dataKey="tertiary"
-              name="Tertiary consumption"
-              stroke="#ec4899"
-              strokeWidth={2}
-              dot={{ r: 2 }}
-              legendType="line"
-            />
+            <Line type="monotone" dataKey="residential" name="Residential consumption" stroke="#f7d22d" strokeWidth={2} dot={{ r: 2 }} legendType="line" />
+            <Line type="monotone" dataKey="primary" name="Primary consumption" stroke="#14b8a6" strokeWidth={2} dot={{ r: 2 }} legendType="line" />
+            <Line type="monotone" dataKey="secondary" name="Secondary consumption" stroke="#f97316" strokeWidth={2} dot={{ r: 2 }} legendType="line" />
+            <Line type="monotone" dataKey="tertiary" name="Tertiary consumption" stroke="#ec4899" strokeWidth={2} dot={{ r: 2 }} legendType="line" />
           </ComposedChart>
         </ResponsiveContainer>
       </div>

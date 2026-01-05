@@ -54,6 +54,10 @@ def _build_where(
 ):
     data_source = _pick_data_source(level, resolution)
 
+
+    is_future = (domain == "future_production")
+    domain_for_ec = "production" if is_future else domain
+
     where_parts = [
         "t.level = %s",
         "f.time_resolution = %s",
@@ -61,26 +65,28 @@ def _build_where(
         "ec.domain = %s",
         "sc.code = %s",
     ]
-    params = [level, resolution, year, domain, scenario]
+    params = [level, resolution, year, domain_for_ec, scenario]
 
     # day_type OPTIONAL
     if day_type is not None:
         where_parts.append("tm.day_type = %s")
         params.append(day_type)
-    
+
     # month OPTIONAL
     if month is not None:
         where_parts.append("tm.month = %s")
         params.append(month)
 
-    # data_source
-    if data_source == "__RAW__":
-        where_parts.append("f.data_source NOT LIKE 'agg_%'")
+    if is_future:
+        where_parts.append("f.data_source LIKE 'future_production_%'")
     else:
-        where_parts.append("f.data_source = %s")
-        params.append(data_source)
+        # existing behavior
+        if data_source == "__RAW__":
+            where_parts.append("f.data_source NOT LIKE 'agg_%'")
+        else:
+            where_parts.append("f.data_source = %s")
+            params.append(data_source)
 
-    # optional filters
     if base_group:
         where_parts.append("LOWER(ec.base_group) = %s")
         params.append(base_group.lower())

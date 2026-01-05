@@ -8,7 +8,6 @@ import {
   type TerritoryIndexRow,
 } from "./TerritoryLevel";
 
-
 import { useSelectedTerritory } from "./contexts/SelectedTerritoryContext";
 
 type MapShellProps = {
@@ -16,23 +15,6 @@ type MapShellProps = {
   onTogglePanel: () => void;
   onTerritorySelected?: (territory: TerritoryIndexRow) => void;
 };
-
-type AppLevel = "region" | "province" | "municipality";
-
-function normalizeLevel(level: TerritoryIndexRow["level"]): AppLevel {
-  if (level === "region") return "region";
-  if (level === "province") return "province";
-  return "municipality";
-}
-
-function toNum(x: unknown): number | null {
-  if (typeof x === "number" && Number.isFinite(x)) return x;
-  if (typeof x === "string") {
-    const n = Number(x.trim());
-    return Number.isFinite(n) ? n : null;
-  }
-  return null;
-}
 
 export default function MapShell({
   map,
@@ -56,38 +38,25 @@ export default function MapShell({
   };
 
   const handleSelect = (t: TerritoryIndexRow) => {
+    console.log("SELECTED:", t.level, t.name, t.codes);
     setSearchTerm(t.name);
     setShowResults(false);
     onTerritorySelected?.(t);
 
-    const lvl = normalizeLevel(t.level);
-
-    const reg =
-      toNum(t.codes?.reg) ??
-      toNum((t.parent as any)?.codes?.reg) ??
-      0;
-
-    const prov =
-      toNum(t.codes?.prov) ??
-      toNum((t.parent as any)?.codes?.prov) ??
-      null;
-
-    const mun = toNum(t.codes?.mun) ?? null;
-
-    const codes: { reg: number; prov?: number; mun?: number } = {
-      reg,
-      ...(lvl !== "region" && prov != null ? { prov } : {}),
-      ...(lvl === "municipality" && mun != null ? { mun } : {}),
-    };
-
+    // ✅ codes are guaranteed by territory_index.json structure
     setSelectedTerritory({
-      level: lvl,
+      level: t.level, // "region" | "province" | "municipality"
       name: t.name,
-      codes,
-      parent: t.parent,
+      codes: {
+        reg: t.codes.reg,
+        ...(t.codes.prov != null ? { prov: t.codes.prov } : {}),
+        ...(t.codes.mun != null ? { mun: t.codes.mun } : {}),
+      },
+      parent: {
+        region: t.parent?.region,
+        province: t.parent?.province,
+      },
     });
-
-
   };
 
   const handleBlur = () => {

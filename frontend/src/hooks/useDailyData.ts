@@ -21,15 +21,19 @@ export const MONTHS: { key: MonthKey; label: string; monthNum: number }[] = [
 ];
 
 type DayType = "weekday" | "weekend";
-type Domain = "consumption" | "production";
+export type Domain = "consumption" | "production";
+
+// ✅ backend level values
+export type BackendLevel = "region" | "province" | "comune";
 
 export type SeriesPoint = {
   x: number; // 1..12 (month)
   value_mwh: number;
 };
 
-export type ProvinceMonthlySeries = {
-  province_code: number;
+export type TerritoryDailySeries = {
+  level: BackendLevel;
+  territory_code: number; // region_code | province_code | comune_code (normalized)
   domain: Domain;
   year: number;
   weekday: number[]; // length 12
@@ -56,52 +60,73 @@ function toSeries12(points: SeriesPoint[]): number[] {
   return arr;
 }
 
-async function fetchProvinceSeries(params: {
-  level: "province";
+function codeParamKey(level: BackendLevel): "region_code" | "province_code" | "comune_code" {
+  if (level === "region") return "region_code";
+  if (level === "province") return "province_code";
+  return "comune_code";
+}
+
+async function fetchTerritorySeries(params: {
+  level: BackendLevel;
   resolution: "monthly";
   domain: Domain;
   year: number;
-  province_code: number;
+  territory_code: number; // normalized input
   day_type: DayType;
+  signal?: AbortSignal;
 }): Promise<SeriesPoint[]> {
   const url = new URL(`${API_BASE}/charts/series`);
   url.searchParams.set("level", params.level);
   url.searchParams.set("resolution", params.resolution);
   url.searchParams.set("domain", params.domain);
   url.searchParams.set("year", String(params.year));
-  url.searchParams.set("province_code", String(params.province_code));
   url.searchParams.set("day_type", params.day_type);
-  console.log("REQUEST:", url.toString());
 
-  const res = await fetch(url.toString());
+  // ✅ correct param name per level
+  const key = codeParamKey(params.level);
+  url.searchParams.set(key, String(params.territory_code));
+
+  console.log("[useDailyData] REQUEST:", url.toString());
+
+  const res = await fetch(url.toString(), { signal: params.signal });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(
-      `Failed /charts/series (${params.domain}, ${params.day_type}) ${res.status} ${text}`
+      `Failed /charts/series (${params.level}, ${params.domain}, ${params.day_type}) ${res.status} ${text}`
     );
   }
 
-  return (await res.json()) as SeriesPoint[];
+  const json = (await res.json()) as SeriesPoint[];
+  return Array.isArray(json) ? json : [];
 }
 
+/**
+ * Generic daily hook (weekday/weekend monthly series) for:
+ * - region:   level="region"  + region_code
+ * - province: level="province"+ province_code
+ * - comune:   level="comune"  + comune_code
+ */
 export function useDailyData(
-  provinceCode?: number | null,
+  level: BackendLevel,
+  territoryCode?: number | null,
   options?: { year?: number; domain?: Domain }
 ) {
   const year = options?.year ?? 2019;
   const domain = options?.domain ?? "consumption";
 
-  const [series, setSeries] = useState<ProvinceMonthlySeries | null>(null);
+  const [series, setSeries] = useState<TerritoryDailySeries | null>(null);
   const [dailyLoading, setDailyLoading] = useState(false);
   const [dailyError, setDailyError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!provinceCode) {
+    if (!territoryCode) {
       setSeries(null);
       setDailyError(null);
       setDailyLoading(false);
       return;
     }
+
+    const controller = new AbortController();
 
     const run = async () => {
       try {
@@ -109,32 +134,36 @@ export function useDailyData(
         setDailyError(null);
 
         const [wkdayPoints, wkendPoints] = await Promise.all([
-          fetchProvinceSeries({
-            level: "province",
+          fetchTerritorySeries({
+            level,
             resolution: "monthly",
             domain,
             year,
-            province_code: provinceCode,
+            territory_code: territoryCode,
             day_type: "weekday",
+            signal: controller.signal,
           }),
-          fetchProvinceSeries({
-            level: "province",
+          fetchTerritorySeries({
+            level,
             resolution: "monthly",
             domain,
             year,
-            province_code: provinceCode,
+            territory_code: territoryCode,
             day_type: "weekend",
+            signal: controller.signal,
           }),
         ]);
 
         setSeries({
-          province_code: provinceCode,
+          level,
+          territory_code: territoryCode,
           domain,
           year,
           weekday: toSeries12(wkdayPoints),
           weekend: toSeries12(wkendPoints),
         });
       } catch (e: any) {
+        if (e?.name === "AbortError") return;
         console.error(e);
         setDailyError(e?.message || "Failed to load daily data");
         setSeries(null);
@@ -144,7 +173,8 @@ export function useDailyData(
     };
 
     run();
-  }, [provinceCode, year, domain]);
+    return () => controller.abort();
+  }, [level, territoryCode, year, domain]);
 
   const chartData = useMemo(() => {
     if (!series) return [];
@@ -156,8 +186,8 @@ export function useDailyData(
   }, [series]);
 
   return {
-    series,        // raw 12-value arrays
-    chartData,     // ready for recharts
+    series, // raw 12-value arrays
+    chartData, // ready for recharts
     dailyLoading,
     dailyError,
   };

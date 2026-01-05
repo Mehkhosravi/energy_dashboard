@@ -1,58 +1,97 @@
 // src/components/ChartShell.tsx
-import { useRef } from "react";
-import DailyCharts from "./charts/DailyChart";
+import { useMemo, useRef } from "react";
+
+import DailyCharts from "./charts/DailyChart"; // <-- confirm this path is real
+import HourlyChart from "./charts/HourlyChart";
 import DownloadReportButton from "./DownloadReportButton";
+
 import { useSelectedTerritory } from "./contexts/SelectedTerritoryContext";
 import { useDailyData } from "../hooks/useDailyData";
-import ProvinceMonthlyChartContainer from "./charts/ProvinceMonthlyChartContainer";
-import HourlyChart from "./charts/HourlyChart";
+import useMonthlyData, { type BackendLevel } from "../hooks/useMonthlyData";
+import { useHourlyCalendarData } from "../hooks/useHourlyCalendarData";
+
+import MonthlyChart from "./charts/MonthlyChart";
+import type { TerritoryLevel } from "./TerritoryLevel";
+
+// Map frontend TerritoryLevel -> backend API level
+function toBackendLevel(level: TerritoryLevel): BackendLevel {
+  return level === "municipality" ? "comune" : level;
+}
 
 export default function ChartShell() {
   const { selectedTerritory } = useSelectedTerritory();
 
-  // ✅ ALWAYS call hooks before any conditional returns
   const chartRefs = useRef<Record<string, HTMLElement | null>>({});
+  const titlePlace = selectedTerritory?.name ?? "selected territory";
 
-  const titlePlace =
-    selectedTerritory?.level === "region"
-      ? selectedTerritory.name
-      : selectedTerritory?.level === "province"
-      ? selectedTerritory.name
-      : selectedTerritory?.level === "municipality"
-      ? selectedTerritory.name
-      : "selected territory";
+  // -----------------------------
+  // Monthly (multi-level)
+  // -----------------------------
+  const monthlyLabel: TerritoryLevel = selectedTerritory?.level ?? "province";
 
-  // province code for now
-  const provCod =
-    selectedTerritory?.level === "province"
-      ? selectedTerritory.codes.prov ?? null
-      : null;
+  const monthlyBackendLevel: BackendLevel = selectedTerritory
+    ? toBackendLevel(selectedTerritory.level)
+    : "province";
 
-  const { chartData, dailyLoading, dailyError } = useDailyData(provCod, {
+  const monthlyTerritoryCode = useMemo(() => {
+    if (!selectedTerritory) return null;
+    if (selectedTerritory.level === "region") return selectedTerritory.codes.reg ?? null;
+    if (selectedTerritory.level === "province") return selectedTerritory.codes.prov ?? null;
+    return selectedTerritory.codes.mun ?? null; // municipality -> comune_code
+  }, [selectedTerritory]);
+
+  const monthly = useMonthlyData(monthlyBackendLevel, monthlyTerritoryCode, 2019, 0);
+
+  // -----------------------------
+  // Daily (multi-level)
+  // -----------------------------
+  const dailyBackendLevel: BackendLevel = selectedTerritory
+    ? toBackendLevel(selectedTerritory.level)
+    : "province";
+
+  const dailyTerritoryCode = useMemo(() => {
+    if (!selectedTerritory) return null;
+    if (selectedTerritory.level === "region") return selectedTerritory.codes.reg ?? null;
+    if (selectedTerritory.level === "province") return selectedTerritory.codes.prov ?? null;
+    return selectedTerritory.codes.mun ?? null; // municipality -> comune_code
+  }, [selectedTerritory]);
+
+  const {
+    chartData: chartDailyData,
+    dailyLoading,
+    dailyError,
+  } = useDailyData(dailyBackendLevel, dailyTerritoryCode, {
     year: 2019,
     domain: "consumption",
   });
 
-  // ✅ returns are fine now (all hooks already called)
-  if (dailyLoading) return <div>Loading…</div>;
-  if (dailyError) return <div>{dailyError}</div>;
-  if (chartData && !chartData.length) return null;
+  // -----------------------------
+  // Hourly (multi-level)
+  // -----------------------------
+   const hourlyBackendLevel: BackendLevel = selectedTerritory
+    ? toBackendLevel(selectedTerritory.level)
+    : "province";
 
-  const unsupported = selectedTerritory && selectedTerritory.level !== "province";
+  const hourlyTerritoryCode = useMemo(() => {
+    if (!selectedTerritory) return null;
+    if (selectedTerritory.level === "region") return selectedTerritory.codes.reg ?? null;
+    if (selectedTerritory.level === "province") return selectedTerritory.codes.prov ?? null;
+    return selectedTerritory.codes.mun ?? null;
+  }, [selectedTerritory]);
+
+  const {
+    chartData: chartHourlyData,
+    hourlyLoading,
+    hourlyError,
+  } = useHourlyCalendarData(hourlyBackendLevel, hourlyTerritoryCode, {
+    year: 2019,
+    scenario: 0,
+    domain: "consumption",
+  });
 
   return (
     <section className="charts">
-      {unsupported && (
-        <div className="chart-card" style={{ marginBottom: 16 }}>
-          <div className="chart-header">
-            <h3>Charts not yet enabled for this level</h3>
-            <span className="chart-subtitle">
-              Selected: {selectedTerritory.level} of {selectedTerritory.name}. For now charts work only for provinces.
-            </span>
-          </div>
-        </div>
-      )}
-
+      {/* Monthly row */}
       <div className="chart-row">
         <div className="chart-card">
           <div className="chart-header">
@@ -66,19 +105,27 @@ export default function ChartShell() {
               chartRefs.current["monthly production and consumption"] = el;
             }}
           >
-            <ProvinceMonthlyChartContainer />
+            <MonthlyChart
+              data={monthly.data}
+              loading={monthly.loading}
+              error={monthly.error}
+              hasTerritory={monthly.hasTerritory}
+              territoryLabel={monthlyLabel}
+              territoryName={selectedTerritory?.name ?? null}
+            />
           </div>
         </div>
 
         <div className="chart-insight">
-          <h4 className="chart-insight-title">Key Insights – Shares</h4>
+          <h4 className="chart-insight-title">Key Insights - Shares</h4>
           <p className="chart-insight-text">
-            Explain which renewable source is dominant, which ones contribute
-            less, and how this compares to total consumption.
+            Explain which renewable source is dominant, which ones contribute less,
+            and how this compares to total consumption.
           </p>
         </div>
       </div>
 
+      {/* Daily row */}
       <div className="chart-row">
         <div className="chart-card">
           <div className="chart-header">
@@ -88,57 +135,76 @@ export default function ChartShell() {
 
           <div
             className="chart-container chart-export-block"
+            style={{ minHeight: 360 }}
             ref={(el) => {
               chartRefs.current["daily consumption"] = el;
             }}
           >
-            <DailyCharts data={chartData} />
+            {dailyTerritoryCode == null ? (
+              <div className="chart-placeholder">
+                Select a territory to see weekday vs weekend profile.
+              </div>
+            ) : dailyLoading ? (
+              <div className="chart-placeholder">Loading...</div>
+            ) : dailyError ? (
+              <div className="chart-placeholder text-red-600">Error: {dailyError}</div>
+            ) : chartDailyData.length === 0 ? (
+              <div className="chart-placeholder">No daily data available.</div>
+            ) : (
+              <DailyCharts data={chartDailyData} />
+            )}
           </div>
         </div>
 
         <div className="chart-insight">
-          <h4 className="chart-insight-title">Key Insights – Shares</h4>
+          <h4 className="chart-insight-title">Key Insights - Shares</h4>
           <p className="chart-insight-text">
-            Explain which renewable source is dominant, which ones contribute
-            less, and how this compares to total consumption.
+            Explain which renewable source is dominant, which ones contribute less,
+            and how this compares to total consumption.
           </p>
         </div>
       </div>
 
-      {/* Hourly chart row */}
+      {/* Hourly row */}
+            {/* Hourly row */}
       <div className="chart-row">
         <div className="chart-card">
           <div className="chart-header">
             <h3>Hourly production and consumption</h3>
             <span className="chart-subtitle">In GWh, for the {titlePlace}</span>
           </div>
+
           <div
             className="chart-container chart-export-block"
             ref={(el) => {
               chartRefs.current["hourly production and consumption"] = el;
             }}
           >
-            <HourlyChart 
-              year={2019}
-              scenario={0}
-              domain="consumption" 
-            />
+            {hourlyTerritoryCode == null ? (
+              <div className="chart-placeholder">
+                Select a territory to see hourly profiles.
+              </div>
+            ) : hourlyLoading ? (
+              <div className="chart-placeholder">Loading...</div>
+            ) : hourlyError ? (
+              <div className="chart-placeholder text-red-600">Error: {hourlyError}</div>
+            ) : chartHourlyData.length === 0 ? (
+              <div className="chart-placeholder">No hourly data available.</div>
+            ) : (
+              <HourlyChart data={chartHourlyData} />
+            )}
           </div>
         </div>
 
         <div className="chart-insight">
-          <h4 className="chart-insight-title">Key Insights – Shares</h4>
+          <h4 className="chart-insight-title">Key Insights - Shares</h4>
           <p className="chart-insight-text">
-            Explain which renewable source is dominant, which ones contribute
-            less, and how this compares to total consumption.
+            Explain which renewable source is dominant, which ones contribute less,
+            and how this compares to total consumption.
           </p>
         </div>
       </div>
 
-      <DownloadReportButton
-        chartRefs={chartRefs.current}
-        provinceName={selectedTerritory?.name ?? "Unknown"}
-      />
     </section>
   );
 }

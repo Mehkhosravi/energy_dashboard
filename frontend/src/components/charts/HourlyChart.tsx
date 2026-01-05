@@ -8,13 +8,10 @@ import {
   YAxis,
   ResponsiveContainer,
 } from "recharts";
-import { useSelectedTerritory } from "../contexts/SelectedTerritoryContext";
-import { useHourlyData } from "../../hooks/useHourlyData";
+import type { HourlyMonthChart } from "../../hooks/useHourlyCalendarData";
 
 type Props = {
-  year: number;
-  scenario: number;
-  domain?: "consumption" | "production" | "future_production";
+  data: HourlyMonthChart[];
 };
 
 type SeasonRow = {
@@ -38,10 +35,6 @@ const MONTH_SHORT: Record<number, string> = {
   12: "Dec",
 };
 
-function monthTitle(month: number, year: number) {
-  return `${MONTH_SHORT[month]} ${year}`;
-}
-
 function formatHourTick(x: any) {
   const n = Number(x);
   if (!Number.isFinite(n)) return String(x);
@@ -54,64 +47,17 @@ function formatTooltipLabel(x: any) {
   return `Hour ${String(n).padStart(2, "0")}:00`;
 }
 
-function toChartData(
-  weekday: { hour: number; value_mwh: number }[],
-  weekend: { hour: number; value_mwh: number }[]
-) {
-  const wk = new Map<number, number>();
-  const we = new Map<number, number>();
-
-  for (const p of weekday) wk.set(p.hour + 1, p.value_mwh); // 0..23 -> 1..24
-  for (const p of weekend) we.set(p.hour + 1, p.value_mwh);
-
-  const out: Array<{ x: number; weekday_mwh: number | null; weekend_mwh: number | null }> = [];
-  for (let x = 1; x <= 24; x++) {
-    out.push({
-      x,
-      weekday_mwh: wk.get(x) ?? null,
-      weekend_mwh: we.get(x) ?? null,
-    });
-  }
-  return out;
-}
-
-function MonthMiniChart({
-  year,
-  scenario,
-  domain,
-  month,
-}: {
-  year: number;
-  scenario: number;
-  domain: "consumption" | "production" | "future_production";
-  month: number; // 1..12
-}) {
-  // ✅ new API supports month=...
-  const wk = useHourlyData({ year, scenario, domain, dayType: "weekday", month });
-  const we = useHourlyData({ year, scenario, domain, dayType: "weekend", month });
-
-  const chartData = useMemo(() => toChartData(wk.data, we.data), [wk.data, we.data]);
-
-  const loading = wk.loading || we.loading;
-  const error = wk.error || we.error;
-
+function MonthMiniChart({ title, data }: { title: string; data: any[] }) {
   return (
     <div className="chart-card" style={{ border: "none", boxShadow: "none" }}>
       <div className="chart-header">
-        <h3>{monthTitle(month, year)}</h3>
-        <div className="chart-subtitle">
-          Weekday vs Weekend {loading ? "· Loading…" : ""}
-        </div>
-        {error ? (
-          <div className="chart-subtitle" style={{ color: "#dc2626" }}>
-            {error}
-          </div>
-        ) : null}
+        <h3>{title}</h3>
+        <div className="chart-subtitle">Weekday vs Weekend</div>
       </div>
 
       <div style={{ width: "100%", height: 90 }}>
         <ResponsiveContainer>
-          <LineChart data={chartData} margin={{ top: 2, right: 6, left: 8, bottom: 0 }}>
+          <LineChart data={data} margin={{ top: 2, right: 6, left: 8, bottom: 0 }}>
             <XAxis
               dataKey="x"
               tickFormatter={formatHourTick}
@@ -153,9 +99,7 @@ function MonthMiniChart({
   );
 }
 
-export default function HourlyChart({ year, scenario, domain = "consumption" }: Props) {
-  const { selectedTerritory } = useSelectedTerritory();
-
+export default function HourlyChart({ data }: Props) {
   const seasons: SeasonRow[] = useMemo(
     () => [
       { key: "winter", label: "Winter", months: [1, 2, 3] },
@@ -166,7 +110,11 @@ export default function HourlyChart({ year, scenario, domain = "consumption" }: 
     []
   );
 
-  if (!selectedTerritory) return null;
+  const byMonth = useMemo(() => {
+    const m = new Map<number, HourlyMonthChart>();
+    for (const row of data) m.set(row.month, row);
+    return m;
+  }, [data]);
 
   return (
     <div>
@@ -183,15 +131,16 @@ export default function HourlyChart({ year, scenario, domain = "consumption" }: 
               gap: 12,
             }}
           >
-            {season.months.map((m) => (
-              <MonthMiniChart
-                key={`${season.key}-${m}`}
-                year={year}
-                month={m}
-                scenario={scenario}
-                domain={domain}
-              />
-            ))}
+            {season.months.map((month) => {
+              const row = byMonth.get(month);
+              return (
+                <MonthMiniChart
+                  key={`${season.key}-${month}`}
+                  title={`${MONTH_SHORT[month]}`}
+                  data={row?.data ?? []}
+                />
+              );
+            })}
           </div>
         </div>
       ))}
