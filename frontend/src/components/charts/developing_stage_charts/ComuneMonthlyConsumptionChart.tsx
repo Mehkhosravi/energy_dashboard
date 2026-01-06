@@ -9,7 +9,7 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
-import type { ComuneMonthlyEnergyPoint } from "../../hooks/useComuneMonthlyEnergy";
+import type { ComuneMonthlyEnergyPoint } from "../../../hooks/useComuneMonthlyEnergy";
 
 interface Props {
   data: ComuneMonthlyEnergyPoint[];

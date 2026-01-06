@@ -1,7 +1,7 @@
 // src/components/charts/ProvinceMonthlyChartContainer.tsx
-import MonthlyChart from "./MonthlyChart";
-import { useSelectedTerritory } from "../contexts/SelectedTerritoryContext";
-import useProvinceMonthlyData  from "../../hooks/useProvinceMonthlyData";
+import MonthlyChart from "../MonthlyChart";
+import { useSelectedTerritory } from "../../contexts/SelectedTerritoryContext";
+import useProvinceMonthlyData  from "../../../hooks/useProvinceMonthlyData";
 
 export default function ProvinceMonthlyChartContainer() {
   const { selectedTerritory } = useSelectedTerritory();

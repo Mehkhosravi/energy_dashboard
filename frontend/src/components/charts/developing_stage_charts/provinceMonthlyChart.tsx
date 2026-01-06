@@ -1,6 +1,6 @@
 // src/components/ProvinceProductionMonthlyChart.tsx
 // MonthlyChart.tsx
-import type { CombinedChartPoint } from "../../hooks/useProvinceMonthlyData";
+import type { CombinedChartPoint } from "../../../hooks/useProvinceMonthlyData";
 
 import React from "react";
 import {

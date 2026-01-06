@@ -1,10 +1,11 @@
 // src/components/Header.tsx
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 type MenuItem = "account" | "logout";
 
 type HeaderProps = {
   onOpenAdmin?: () => void;     // open Admin page (Account/Upload)
+  onCloseAdmin?: () => void;    // ✅ make optional
   onLogout?: () => void;        // later: real logout
   userName?: string;
   userRole?: string;
@@ -12,6 +13,7 @@ type HeaderProps = {
 
 export default function Header({
   onOpenAdmin,
+  onCloseAdmin, // ✅ comma fixed by putting it as a separate line
   onLogout,
   userName = "User",
   userRole = "Admin",
@@ -19,7 +21,6 @@ export default function Header({
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
 
-  // close menu if click outside
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
       if (!wrapRef.current) return;
@@ -43,7 +44,6 @@ export default function Header({
       </div>
 
       <div className="header-right">
-        {/* User becomes a button */}
         <div ref={wrapRef} style={{ position: "relative" }}>
           <button
             type="button"
@@ -65,7 +65,6 @@ export default function Header({
             </div>
           </button>
 
-          {/* Dropdown */}
           {open && (
             <div
               style={{

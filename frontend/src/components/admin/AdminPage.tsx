@@ -1,5 +1,5 @@
 import { useState } from "react";
-import DataImportPage from "../data-import/DataImportPage";
+import DataImportPage from "../pages/data-import/DataImportPage";
 
 type AdminTab = "account" | "upload";
 

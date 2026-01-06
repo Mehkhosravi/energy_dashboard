@@ -667,3 +667,437 @@ body {
 .side-option-label {
   white-space: nowrap; /* prevents "Spatial level" from wrapping */
 }
+
+
+
+/* --------- DATA IMPORT PAGE (full width) ------ */
+.import-page {
+  width: 100%;
+  min-width: 0;
+}
+
+/* 2 columns on desktop, 1 on mobile */
+.import-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Main card */
+.import-main {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+  min-width: 0;
+}
+
+.import-head {
+  margin-bottom: 10px;
+}
+
+.import-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.import-subtitle {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.import-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Aside card */
+.import-aside {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+  height: fit-content;
+}
+
+.import-aside-title {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.import-checklist {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.5;
+}
+
+/* Responsive: stack on small screens */
+@media (max-width: 900px) {
+  .import-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+
+/* -----------------------------
+   SCENARIOS PAGE
+----------------------------- */
+
+.scenarios-page {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Top header row */
+.page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.page-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+/* Actions (top-right) */
+.page-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Make "Save" look primary without needing new button classes */
+.btn.primary {
+  background: #111827;
+  color: #f9fafb;
+  border-color: #111827;
+}
+
+/* Sheet-like tab bar */
+.sheet-tabbar {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 12px;
+}
+
+.sheet-tab {
+  padding: 6px 10px;
+  font-size: 12px;
+  border: 1px solid #e5e7eb;
+  border-bottom: none;
+  background: #f9fafb;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  cursor: pointer;
+  color: #111827;
+}
+
+.sheet-tab.active {
+  background: #ffffff;
+  font-weight: 600;
+  position: relative;
+  top: 1px; /* little lift like a real tab */
+}
+
+/* Grid: left rail + main */
+.scenarios-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Left rail */
+.scenarios-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.rail-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.rail-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* Fields */
+.field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.field span {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.field select {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  font-size: 13px;
+  outline: none;
+}
+
+.field select:focus {
+  border-color: #111827;
+}
+
+/* Chips */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.chip {
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #111827;
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.chip:hover {
+  background: #f3f4f6;
+}
+
+/* Hint text */
+.hint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+/* Main content panel */
+.scenarios-main {
+  min-width: 0;
+}
+
+/* Panels inside main */
+.panel {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.panel-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.panel-subtitle {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.input {
+  width: 220px;
+  max-width: 100%;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  font-size: 13px;
+  outline: none;
+}
+
+.input:focus {
+  border-color: #111827;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .scenarios-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .input {
+    width: 100%;
+  }
+}
+
+
+/* -----------------------------
+   PREDEFINED: TABLE + BOARD
+----------------------------- */
+
+.predef-table {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+  margin-bottom: 14px;
+}
+
+.predef-table-head,
+.predef-table-row {
+  display: grid;
+  grid-template-columns: 90px 90px 1fr 140px 130px 80px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+}
+
+.predef-table-head {
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.predef-table-row {
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 13px;
+}
+
+.predef-table-row:last-child {
+  border-bottom: none;
+}
+
+.muted {
+  color: #6b7280;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #111827;
+}
+
+/* optional category colors */
+.tag-solar { border-color: #fde68a; background: #fffbeb; }
+.tag-wind { border-color: #bae6fd; background: #f0f9ff; }
+.tag-biomass { border-color: #bbf7d0; background: #f0fdf4; }
+
+/* Horizontal “compare plans” board */
+.scenario-board {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 340px;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  scroll-snap-type: x proximity;
+}
+
+.scenario-card {
+  scroll-snap-align: start;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 520px;
+}
+
+.scenario-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.scenario-title {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.scenario-desc {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+  line-height: 1.35;
+}
+
+.scenario-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.scenario-meta {
+  border: 1px solid #f3f4f6;
+  background: #fafafa;
+  border-radius: 10px;
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+}
+
+/* Make the table horizontal-scroll on narrow screens */
+@media (max-width: 900px) {
+  .predef-table {
+    overflow-x: auto;
+  }
+  .predef-table-head,
+  .predef-table-row {
+    min-width: 820px;
+  }
+}

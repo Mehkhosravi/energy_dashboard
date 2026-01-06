@@ -1,5 +1,5 @@
 import AccountPanel from "./AccountPanel";
-import DataImportPage from "../data-import/DataImportPage";
+import DataImportPage from "../pages/data-import/DataImportPage";
 
 type Props = {
   section: "account" | "upload" | "validate";

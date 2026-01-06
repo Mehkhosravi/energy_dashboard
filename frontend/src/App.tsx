@@ -1,9 +1,15 @@
+// src/App.tsx
+import { useState } from "react";
 
+import Header from "./components/Header";
+import Toolbar from "./components/Toolbar";
 import Grid from "./components/Grid";
+
 import MainMap from "./components/map/MainMap";
-import TestMap from "./components/map/testMap";
+import DataImportPage from "./components/pages/data-import/DataImportPage";
+import ScenariosPage from "./components/pages/scenarios/ScenarioPage";
 
-
+import type { AppTab } from "./types/AppTab";
 
 function SidePanelMock() {
   return (
@@ -13,17 +19,27 @@ function SidePanelMock() {
     </div>
   );
 }
-export type ProvinceProps = {
-  DEN_UTS: string;
-  COD_PROV: number;
-  CONS_ANNO: number;
-};
-function App() {
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState<AppTab>("home");
+
   return (
-    <Grid
-      side={<SidePanelMock />}
-      map={<MainMap />}
-    />
+    <div className="page">
+      {/* Header no longer controls admin */}
+      <Header />
+
+      <div className="body">
+        <Toolbar activeTab={activeTab} onChangeTab={setActiveTab} />
+
+        {/* Must be main.main for your CSS */}
+        <main className="main">
+          {activeTab === "home" && <Grid map={<MainMap />} side={<SidePanelMock />} />}
+
+          {activeTab === "data-import" && <DataImportPage />}
+
+          {activeTab === "scenarios" && <ScenariosPage />}
+        </main>
+      </div>
+    </div>
   );
 }
-export default App;
