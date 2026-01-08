@@ -963,41 +963,48 @@ body {
 }
 
 
-/* -----------------------------
-   PREDEFINED: TABLE + BOARD
------------------------------ */
+/* === FORCE Predefined scenarios layout (put at END of index.css) === */
 
 .predef-table {
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   overflow: hidden;
-  background: #ffffff;
-  margin-bottom: 14px;
+  background: #fff;
+  margin-top: 10px;
 }
 
-.predef-table-head,
-.predef-table-row {
-  display: grid;
-  grid-template-columns: 90px 90px 1fr 140px 130px 80px;
-  gap: 10px;
+/* Ensure grid layout applies */
+.predef-table .predef-table-head,
+.predef-table .predef-table-row {
+  display: grid !important;
+  grid-template-columns: 90px 100px 1fr 150px 80px !important;
+  column-gap: 12px;
   align-items: center;
   padding: 10px 12px;
 }
 
-.predef-table-head {
+/* header styling */
+.predef-table .predef-table-head {
   background: #f9fafb;
   border-bottom: 1px solid #e5e7eb;
   font-size: 12px;
   font-weight: 700;
 }
 
-.predef-table-row {
+/* row styling */
+.predef-table .predef-table-row {
   border-bottom: 1px solid #f3f4f6;
   font-size: 13px;
 }
 
-.predef-table-row:last-child {
+.predef-table .predef-table-row:last-child {
   border-bottom: none;
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .muted {
@@ -1008,96 +1015,105 @@ body {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
-.tag-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.tag {
-  font-size: 11px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
-  color: #111827;
-}
-
-/* optional category colors */
-.tag-solar { border-color: #fde68a; background: #fffbeb; }
-.tag-wind { border-color: #bae6fd; background: #f0f9ff; }
-.tag-biomass { border-color: #bbf7d0; background: #f0fdf4; }
-
-/* Horizontal “compare plans” board */
-.scenario-board {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 340px;
+/* Cards grid should always be 5 on wide screens */
+.predef-cards-grid {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
   gap: 12px;
-  overflow-x: auto;
-  padding-bottom: 10px;
-  scroll-snap-type: x proximity;
+  margin-top: 12px;
 }
 
-.scenario-card {
-  scroll-snap-align: start;
-  background: #ffffff;
+.scenario-mini {
   border: 1px solid #e5e7eb;
+  background: #fff;
   border-radius: 12px;
-  padding: 12px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  min-height: 520px;
+  gap: 8px;
+  min-width: 0;
 }
 
-.scenario-card-head {
+.scenario-mini-top {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 
-.scenario-title {
+.scenario-mini-title {
   font-size: 13px;
   font-weight: 800;
 }
 
-.scenario-desc {
-  font-size: 12px;
+.scenario-mini-desc {
+  font-size: 11px;
   color: #6b7280;
   margin-top: 2px;
-  line-height: 1.35;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.scenario-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+.scenarios-main {
+  width: 100%;
+  min-width: 0;
 }
 
-.scenario-meta {
-  border: 1px solid #f3f4f6;
-  background: #fafafa;
-  border-radius: 10px;
-  padding: 8px;
+.mini-param-list {
+  border-top: 1px solid #f3f4f6;
+  padding-top: 8px;
   display: grid;
   gap: 6px;
 }
 
-.meta-row {
+.mini-param-row {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   font-size: 12px;
 }
 
-/* Make the table horizontal-scroll on narrow screens */
+.mini-footer {
+  font-size: 11px;
+  margin-top: auto;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .predef-cards-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
 @media (max-width: 900px) {
   .predef-table {
     overflow-x: auto;
   }
-  .predef-table-head,
-  .predef-table-row {
-    min-width: 820px;
+  .predef-table .predef-table-head,
+  .predef-table .predef-table-row {
+    min-width: 760px;
   }
+  .predef-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* chips in the context bar */
+.ctx-pill{
+  display:flex;
+  gap:8px;
+  align-items:baseline;
+  padding:8px 10px;
+  border:1px solid rgba(0,0,0,0.08);
+  border-radius:999px;
+  background:rgba(0,0,0,0.02);
+}
+.ctx-pill-label{
+  font-size:12px;
+  opacity:.65;
+}
+.ctx-pill-value{
+  font-weight:700;
 }
