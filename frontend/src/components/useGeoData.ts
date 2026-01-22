@@ -71,7 +71,7 @@ export type UseGeoDataArgs = {
   resolution: "annual" | "monthly" | "hourly";
   year: number;
   scenario: number;
-  baseGroup?: "domestic" | "primary" | "secondary" | "tertiary" | null;
+  baseGroup?: "domestic" | "primary" | "secondary" | "tertiary";
 };
 
 export type UseGeoDataResult = {
@@ -100,7 +100,6 @@ export function useGeoData({
   resolution,
   year,
   scenario,
-  baseGroup,
 }: UseGeoDataArgs): UseGeoDataResult {
   const normalizedLevel = useMemo(() => normalizeLevel(level), [level]);
   const enabled = normalizedLevel != null;
@@ -135,11 +134,8 @@ export function useGeoData({
       domain,
       scenario: String(scenario),
     });
-    if (baseGroup) {
-      qs.append("base_group", baseGroup);
-    }
     return `${VALUES_API}?${qs.toString()}`;
-  }, [normalizedLevel, resolution, year, domain, scenario, baseGroup]);
+  }, [normalizedLevel, resolution, year, domain, scenario]);
 
   // ✅ Ordered pipeline: geo -> render -> values -> recolor
   useEffect(() => {

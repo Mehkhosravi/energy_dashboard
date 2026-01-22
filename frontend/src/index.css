@@ -192,10 +192,6 @@ body {
   gap: 12px;
 }
 
-.map-search {
-  flex: 1;
-}
-
 .search {
   width: 100%;
   padding: 6px 10px;
@@ -478,6 +474,163 @@ body {
   padding: 6px 8px;
 }
 
+/* ---------- QGIS TREE (ONLY INNER CONNECTORS, NO OUTER ROOT) ---------- */
+/* Put this block AFTER your .side-section background definition */
+
+:root{
+  --qgis-bg: #f9fafb;               /* MUST match .side-section background */
+  --qgis-line: rgba(0,0,0,.35);
+
+  --qgis-row-h: 22px;
+  --qgis-elbow-y: 11px;             /* row center (row-h / 2) */
+
+  --qgis-indent: 18px;              /* children indent under parent */
+  --qgis-gutter: 14px;              /* reserved space for spine+elbows */
+
+  --qgis-toggle-w: 16px;            /* .qgis-toggle / placeholder width */
+  --qgis-gap: 6px;                  /* .qgis-row gap */
+
+  --qgis-spine-x: 7px;              /* vertical spine x inside the gutter */
+
+  /* checkbox LEFT EDGE inside a row = toggle width + gap */
+  --qgis-checkbox-left-x: calc(var(--qgis-toggle-w) + var(--qgis-gap));
+
+  /* IMPORTANT:
+     elbows are drawn on each child node (which starts AFTER padding-left=gutter),
+     so we must shift the elbow left by the gutter to align with the parent spine. */
+  --qgis-elbow-left: calc(var(--qgis-spine-x) - var(--qgis-gutter));
+
+  /* elbow must reach checkbox-left inside the row (so add the gutter back) */
+  --qgis-elbow-w: calc(var(--qgis-checkbox-left-x) - var(--qgis-spine-x) + var(--qgis-gutter));
+}
+
+/* Tree container */
+.qgis-tree{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* Node wrapper */
+.qgis-node{
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Row (toggle | checkbox | swatch | label) */
+.qgis-row{
+  display: flex;
+  align-items: center;
+  gap: var(--qgis-gap);
+  font-size: 12px;
+  color: #374151;
+  min-height: var(--qgis-row-h);
+}
+
+/* Toggle triangle (LEFT like QGIS) */
+.qgis-toggle{
+  width: var(--qgis-toggle-w);
+  height: var(--qgis-toggle-w);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Placeholder must reserve same space as toggle */
+.qgis-toggle-placeholder{
+  width: var(--qgis-toggle-w);
+  height: var(--qgis-toggle-w);
+  display: inline-block;
+}
+
+/* Checkbox sizing */
+.qgis-row input[type="checkbox"]{
+  width: 14px;
+  height: 14px;
+}
+
+/* Swatch */
+.qgis-swatch{
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgba(0,0,0,.35);
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.qgis-swatch--empty{
+  background: transparent;
+  border-color: transparent;
+}
+
+/* Label */
+.qgis-label{
+  user-select: none;
+}
+
+/* --------------------------
+   INNER CONNECTORS (CHILDREN)
+   - No outer/root connector
+   - Vertical spine touches elbows (no gaps)
+   - Elbow hits checkbox mid-left side visually
+-------------------------- */
+
+.qgis-children{
+  margin-left: var(--qgis-indent);
+  padding-left: var(--qgis-gutter);   /* creates the connector gutter */
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+
+/* Vertical spine (1px block so it touches elbows perfectly) */
+.qgis-children::before{
+  content:"";
+  position:absolute;
+  left: var(--qgis-spine-x);
+  top: calc(-1 * var(--qgis-elbow-y)); /* start at parent row center */
+  bottom: var(--qgis-elbow-y);         /* end at last child row center */
+  width: 1px;
+  background: var(--qgis-line);
+  pointer-events:none;
+}
+
+/* Elbow for each direct child node
+   ✅ shifted left by gutter so it meets the spine with NO SPACE */
+.qgis-children > .qgis-node::before{
+  content:"";
+  position:absolute;
+  left: var(--qgis-elbow-left);        /* THIS is the key fix */
+  top: var(--qgis-elbow-y);
+  width: var(--qgis-elbow-w);          /* still reaches checkbox */
+  height: 1px;
+  background: var(--qgis-line);
+  pointer-events:none;
+}
+
+/* Stop the spine after the last child */
+.qgis-children > .qgis-node.is-last::after{
+  content:"";
+  position:absolute;
+  left: var(--qgis-elbow-left);        /* match elbow left */
+  top: var(--qgis-elbow-y);
+  bottom: 0;
+  width: 1px;
+  background: var(--qgis-bg);
+  pointer-events:none;
+}
+
+
+
 /* Section header with title + chevron */
 .side-section-header {
   width: 100%;
@@ -586,6 +739,7 @@ body {
 
 /* Search bar */
 .map-search {
+  flex: 1;
   position: relative; /* important for dropdown positioning */
 }
 

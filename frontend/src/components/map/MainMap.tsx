@@ -149,6 +149,7 @@ export default function MainMap() {
   // Keep these as you do in your app (replace if you have state/URL params)
   const year = 2019;
   const scenario = 0;
+  const baseGroup = useMemo(() => filters.consumptionBaseGroup, [filters.consumptionBaseGroup]);
 
   const { geo, valuesMap, loadingGeo, error, debug } = useGeoData({
     level,
@@ -156,6 +157,7 @@ export default function MainMap() {
     resolution,
     year,
     scenario,
+    baseGroup,
   });
 
   const breaks = useMemo(() => {
