@@ -1,7 +1,6 @@
 // src/components/LayersFiltersPanel.tsx
 import { useEffect, useState, type ReactNode } from "react";
-import { useSelectedTerritory } from "./contexts/SelectedTerritoryContext";
-import { useMapFilters } from "./contexts/MapFiltersContext";
+import { useMapFilters, type SpatialScale } from "./contexts/MapFiltersContext";
 
 type SectionProps = {
   title: string;
@@ -32,113 +31,133 @@ function Section({ title, info, defaultOpen = true, children }: SectionProps) {
   );
 }
 
-/**
- * Professional UX behavior:
- * When user changes the spatial scale manually, keep context by "promoting" selection:
- *  - municipality -> province / region
- *  - province -> region
- *  - region -> (cannot expand), keep selection unchanged
- */
-function promoteSelectionToScale(
-  current: ReturnType<typeof useSelectedTerritory>["selectedTerritory"],
-  targetScale: "region" | "province" | "municipality"
-) {
-  if (!current) return null;
+/** QGIS-like tree node with connectors + checkbox + optional color swatch + children */
+type TreeNodeProps = {
+  label: string;
+  checked?: boolean;
+  onCheck?: () => void;
+  defaultOpen?: boolean;
+  swatchColor?: string;
+  isLast?: boolean; // for connector drawing (spine stop)
+  children?: ReactNode;
+};
 
-  // already matches
-  if (current.level === targetScale) return current;
+function TreeNode({
+  label,
+  checked = false,
+  onCheck,
+  defaultOpen = true,
+  swatchColor,
+  isLast = false,
+  children,
+}: TreeNodeProps) {
+  const hasChildren = Boolean(children);
+  const [open, setOpen] = useState(defaultOpen);
 
-  // --- Promote down? (region -> province/municipality) is not safe without extra info.
-  // Keep selection unchanged.
-  if (current.level === "region" && targetScale !== "region") {
-    return current;
-  }
+  // nice UX: if the group becomes checked, expand it
+  useEffect(() => {
+    if (hasChildren && checked) setOpen(true);
+  }, [checked, hasChildren]);
 
-  // municipality -> province
-  if (current.level === "municipality" && targetScale === "province") {
-    const reg = current.codes?.reg;
-    const prov = current.codes?.prov;
+  const nodeClassName = [
+    "qgis-node",
+    isLast ? "is-last" : "",
+    hasChildren && open ? "has-open-children" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-    if (typeof reg !== "number" || typeof prov !== "number") return current;
+  return (
+    <div className={nodeClassName}>
+      <div className="qgis-row">
+        {/* ✅ toggle column ALWAYS reserved (aligns elbows) */}
+        {hasChildren ? (
+          <button
+            type="button"
+            className="qgis-toggle"
+            onClick={() => setOpen((o) => !o)}
+            aria-label={open ? "Collapse" : "Expand"}
+          >
+            {open ? "▾" : "▸"}
+          </button>
+        ) : (
+          <span className="qgis-toggle-placeholder" />
+        )}
 
-    return {
-      level: "province" as const,
-      name: current.parent?.province ?? current.name, // best effort label
-      codes: { reg, prov },
-      parent: { region: current.parent?.region, province: current.parent?.province },
-    };
-  }
+        {/* ✅ anchor around checkbox so spine can attach to BOTTOM of checkbox */}
+        <span className="qgis-check-anchor">
+          <input type="checkbox" checked={checked} onChange={onCheck} />
+        </span>
 
-  // municipality -> region
-  if (current.level === "municipality" && targetScale === "region") {
-    const reg = current.codes?.reg;
-    if (typeof reg !== "number") return current;
+        {swatchColor ? (
+          <span className="qgis-swatch" style={{ background: swatchColor }} />
+        ) : (
+          <span className="qgis-swatch qgis-swatch--empty" />
+        )}
 
-    return {
-      level: "region" as const,
-      name: current.parent?.region ?? "Region",
-      codes: { reg },
-      parent: { region: current.parent?.region },
-    };
-  }
+        <span className="qgis-label">{label}</span>
+      </div>
 
-  // province -> region
-  if (current.level === "province" && targetScale === "region") {
-    const reg = current.codes?.reg;
-    if (typeof reg !== "number") return current;
-
-    return {
-      level: "region" as const,
-      name: current.parent?.region ?? "Region",
-      codes: { reg },
-      parent: { region: current.parent?.region },
-    };
-  }
-
-  return current;
+      {hasChildren && open && <div className="qgis-children">{children}</div>}
+    </div>
+  );
 }
 
+type ProductionType =
+  | "all"
+  | "solar"
+  | "wind"
+  | "hydroelectric"
+  | "geothermal"
+  | "biomass";
+
+type ConsumptionSector =
+  | "all"
+  | "residential"
+  | "primary"
+  | "secondary"
+  | "tertiary";
+
 export default function LayersFiltersPanel() {
-  const { selectedTerritory, setSelectedTerritory } = useSelectedTerritory();
   const {
     filters,
     setTheme,
     setScale,
     setTimeResolution,
-    setScaleMode,
     toggleOverlay,
+    setConsumptionBaseGroup,
   } = useMapFilters();
 
-  // ✅ AUTO mode: scale follows selection level
+  const [productionType, setProductionType] = useState<ProductionType>("all");
+  const [consumptionSector, setConsumptionSector] =
+    useState<ConsumptionSector>("all");
+
+  // reset sub-filters when switching main theme (good UX)
   useEffect(() => {
-    if (filters.scaleMode !== "auto") return;
+    if (filters.theme === "production") setProductionType("all");
+    if (filters.theme === "consumption") setConsumptionSector("all");
+  }, [filters.theme]);
 
-    const nextScale =
-      selectedTerritory?.level === "region"
-        ? "region"
-        : selectedTerritory?.level === "province"
-        ? "province"
-        : selectedTerritory?.level === "municipality"
-        ? "municipality"
-        : null;
+  const handleScaleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setScale(e.target.value as SpatialScale);
+  };
 
-    if (!nextScale) return;
-    if (filters.scale === nextScale) return;
+  const selectConsumption = (v: ConsumptionSector) => {
+    setConsumptionSector(v);
 
-    setScale(nextScale);
-  }, [selectedTerritory?.level, filters.scaleMode, filters.scale, setScale]);
-
-  // ✅ MANUAL mode handler (professional UX)
-  const handleManualScaleChange = (target: "region" | "province" | "municipality") => {
-    setScaleMode("manual");
-
-    // Promote selection if needed (don’t lose user context)
-    const promoted = promoteSelectionToScale(selectedTerritory, target);
-    if (promoted && promoted !== selectedTerritory) {
-      setSelectedTerritory(promoted);
+    // maps to backend base_group for consumption
+    if (v === "all") {
+      setConsumptionBaseGroup(null);
+    } else if (v === "residential") {
+      setConsumptionBaseGroup("domestic");
+    } else {
+      setConsumptionBaseGroup(v as "primary" | "secondary" | "tertiary");
     }
+  };
 
-    setScale(target);
+  const selectProduction = (v: ProductionType) => {
+    setProductionType(v);
+    // UI-only for now (later: setProductionBaseGroup(...) in context)
   };
 
   return (
@@ -147,36 +166,101 @@ export default function LayersFiltersPanel() {
         title="Energy category"
         info="Choose whether to analyse consumption, production or future potential."
       >
-        <div className="side-option-group">
-          <label className="side-option">
-            <input
-              type="radio"
-              name="dataTheme"
-              checked={filters.theme === "consumption"}
-              onChange={() => setTheme("consumption")}
+        <div className="qgis-tree">
+          {/* Root 1 */}
+          <TreeNode
+            label="Consumption"
+            checked={filters.theme === "consumption"}
+            onCheck={() => setTheme("consumption")}
+            defaultOpen={true}
+          >
+            <TreeNode
+              label="All"
+              checked={consumptionSector === "all"}
+              onCheck={() => selectConsumption("all")}
+              swatchColor="#9ca3af"
             />
-            <span>Consumption</span>
-          </label>
+            <TreeNode
+              label="Residential"
+              checked={consumptionSector === "residential"}
+              onCheck={() => selectConsumption("residential")}
+              swatchColor="#facc15"
+            />
+            <TreeNode
+              label="Primary"
+              checked={consumptionSector === "primary"}
+              onCheck={() => selectConsumption("primary")}
+              swatchColor="#c4a484"
+            />
+            <TreeNode
+              label="Secondary"
+              checked={consumptionSector === "secondary"}
+              onCheck={() => selectConsumption("secondary")}
+              swatchColor="#a3a3a3"
+            />
+            <TreeNode
+              label="Tertiary"
+              checked={consumptionSector === "tertiary"}
+              onCheck={() => selectConsumption("tertiary")}
+              swatchColor="#f59e0b"
+              isLast
+            />
+          </TreeNode>
 
-          <label className="side-option">
-            <input
-              type="radio"
-              name="dataTheme"
-              checked={filters.theme === "production"}
-              onChange={() => setTheme("production")}
+          {/* Root 2 */}
+          <TreeNode
+            label="Production"
+            checked={filters.theme === "production"}
+            onCheck={() => setTheme("production")}
+            defaultOpen={true}
+          >
+            <TreeNode
+              label="All"
+              checked={productionType === "all"}
+              onCheck={() => selectProduction("all")}
+              swatchColor="#9ca3af"
             />
-            <span>Production</span>
-          </label>
+            <TreeNode
+              label="Solar"
+              checked={productionType === "solar"}
+              onCheck={() => selectProduction("solar")}
+              swatchColor="#fbbf24"
+            />
+            <TreeNode
+              label="Wind"
+              checked={productionType === "wind"}
+              onCheck={() => selectProduction("wind")}
+              swatchColor="#60a5fa"
+            />
+            <TreeNode
+              label="Hydro-electric"
+              checked={productionType === "hydroelectric"}
+              onCheck={() => selectProduction("hydroelectric")}
+              swatchColor="#34d399"
+            />
+            <TreeNode
+              label="Geothermal"
+              checked={productionType === "geothermal"}
+              onCheck={() => selectProduction("geothermal")}
+              swatchColor="#fb7185"
+            />
+            <TreeNode
+              label="Biomass"
+              checked={productionType === "biomass"}
+              onCheck={() => selectProduction("biomass")}
+              swatchColor="#a78bfa"
+              isLast
+            />
+          </TreeNode>
 
-          <label className="side-option">
-            <input
-              type="radio"
-              name="dataTheme"
-              checked={filters.theme === "future_potential"}
-              onChange={() => setTheme("future_potential")}
-            />
-            <span>Future potential</span>
-          </label>
+          {/* Root 3 (last root) */}
+          <TreeNode
+            label="Future potential"
+            checked={filters.theme === "future_potential"}
+            onCheck={() => setTheme("future_potential")}
+            defaultOpen={false}
+            isLast
+          />
         </div>
       </Section>
 
@@ -189,8 +273,9 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="scale"
+              value="region"
               checked={filters.scale === "region"}
-              onChange={() => handleManualScaleChange("region")}
+              onChange={handleScaleChange}
             />
             <span>Region</span>
           </label>
@@ -199,8 +284,9 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="scale"
+              value="province"
               checked={filters.scale === "province"}
-              onChange={() => handleManualScaleChange("province")}
+              onChange={handleScaleChange}
             />
             <span>Province</span>
           </label>
@@ -209,8 +295,9 @@ export default function LayersFiltersPanel() {
             <input
               type="radio"
               name="scale"
+              value="municipality"
               checked={filters.scale === "municipality"}
-              onChange={() => handleManualScaleChange("municipality")}
+              onChange={handleScaleChange}
             />
             <span>Municipality</span>
           </label>
