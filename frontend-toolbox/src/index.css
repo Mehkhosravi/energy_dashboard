@@ -192,10 +192,6 @@ body {
   gap: 12px;
 }
 
-.map-search {
-  flex: 1;
-}
-
 .search {
   width: 100%;
   padding: 6px 10px;
@@ -270,7 +266,7 @@ body {
 }
 
 /* Right info card */
-.place-info {
+.map-info {
   width: 260px;
   max-width: 320px;
   background: #f9fafb;
@@ -283,12 +279,12 @@ body {
   font-size: 13px;
 }
 
-.place-info-header {
+.map-info-header {
   font-weight: 600;
   font-size: 13px;
 }
 
-.place-info-body {
+.map-info-body {
   color: #4b5563;
 }
 
@@ -478,6 +474,195 @@ body {
   padding: 6px 8px;
 }
 
+/* ---------- QGIS TREE (ONLY INNER CONNECTORS, NO OUTER ROOT) ---------- */
+/* Put this block AFTER your .side-section background definition */
+
+:root{
+
+   --qgis-parent-drop: 8px;  /* must match the drop height */
+  --qgis-spine-top-offset: calc(var(--qgis-row-h) - var(--qgis-parent-attach-y));
+
+  --qgis-bg: #f9fafb;               /* MUST match .side-section background */
+  --qgis-line: rgba(0,0,0,.35);
+
+  --qgis-row-h: 22px;
+  --qgis-elbow-y: 11px;             /* row center (row-h / 2) */
+
+  --qgis-indent: 18px;              /* children indent under parent */
+  --qgis-gutter: 14px;              /* reserved space for spine+elbows */
+
+  --qgis-toggle-w: 16px;            /* .qgis-toggle / placeholder width */
+  --qgis-gap: 6px;                  /* .qgis-row gap */
+
+  --qgis-spine-x: 7px;              /* vertical spine x inside the gutter */
+  
+  --qgis-checkbox-h: 14px; /* must match your checkbox size */
+  --qgis-checkbox-top: calc((var(--qgis-row-h) - var(--qgis-checkbox-h)) / 2);
+  --qgis-parent-attach-y: calc(var(--qgis-checkbox-top) + var(--qgis-checkbox-h)); /* bottom of checkbox */
+
+  /* checkbox LEFT EDGE inside a row = toggle width + gap */
+  --qgis-checkbox-left-x: calc(var(--qgis-toggle-w) + var(--qgis-gap));
+
+  /* IMPORTANT:
+     elbows are drawn on each child node (which starts AFTER padding-left=gutter),
+     so we must shift the elbow left by the gutter to align with the parent spine. */
+  --qgis-elbow-left: calc(var(--qgis-spine-x) - var(--qgis-gutter));
+
+  /* elbow must reach checkbox-left inside the row (so add the gutter back) */
+  --qgis-elbow-w: calc(var(--qgis-checkbox-left-x) - var(--qgis-spine-x) + var(--qgis-gutter));
+}
+
+/* Tree container */
+.qgis-tree{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* Node wrapper */
+.qgis-node{
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Row (toggle | checkbox | swatch | label) */
+.qgis-row{
+  display: flex;
+  align-items: center;
+  gap: var(--qgis-gap);
+  font-size: 12px;
+  color: #374151;
+  min-height: var(--qgis-row-h);
+}
+
+/* Toggle triangle (LEFT like QGIS) */
+.qgis-toggle{
+  width: var(--qgis-toggle-w);
+  height: var(--qgis-toggle-w);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Placeholder must reserve same space as toggle */
+.qgis-toggle-placeholder{
+  width: var(--qgis-toggle-w);
+  height: var(--qgis-toggle-w);
+  display: inline-block;
+}
+
+/* Checkbox sizing */
+.qgis-row input[type="checkbox"]{
+  width: var(--qgis-checkbox-h);
+  height: var(--qgis-checkbox-h);
+}
+
+
+/* Swatch */
+.qgis-swatch{
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgba(0,0,0,.35);
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.qgis-swatch--empty{
+  background: transparent;
+  border-color: transparent;
+}
+
+/* Label */
+.qgis-label{
+  user-select: none;
+}
+
+/* --------------------------
+   INNER CONNECTORS (CHILDREN)
+   - No outer/root connector
+   - Vertical spine touches elbows (no gaps)
+   - Elbow hits checkbox mid-left side visually
+-------------------------- */
+
+.qgis-children{
+  margin-left: var(--qgis-indent);
+  padding-left: var(--qgis-gutter);   /* creates the connector gutter */
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+
+.qgis-children::before{
+  content:"";
+  position:absolute;
+  left: var(--qgis-spine-x);
+
+  /* BEFORE */
+  /* top: calc(-1 * var(--qgis-elbow-y)); */
+
+  /* AFTER: start from bottom of parent checkbox */
+  top: calc(-1 * var(--qgis-parent-attach-y));
+
+  bottom: var(--qgis-elbow-y);
+  width: 1px;
+  background: var(--qgis-line);
+  pointer-events:none;
+}
+
+/* Elbow for each direct child node
+   ✅ shifted left by gutter so it meets the spine with NO SPACE */
+.qgis-children > .qgis-node::before{
+  content:"";
+  position:absolute;
+  left: var(--qgis-elbow-left);        /* THIS is the key fix */
+  top: var(--qgis-elbow-y);
+  width: var(--qgis-elbow-w);          /* still reaches checkbox */
+  height: 1px;
+  background: var(--qgis-line);
+  pointer-events:none;
+}
+
+/* Stop the spine after the last child */
+.qgis-children > .qgis-node.is-last::after{
+  content:"";
+  position:absolute;
+  left: var(--qgis-elbow-left);        /* match elbow left */
+  top: var(--qgis-elbow-y);
+  bottom: 0;
+  width: 1px;
+  background: var(--qgis-bg);
+  pointer-events:none;
+}
+
+.qgis-node.has-open-children .qgis-check-anchor::after {
+  height: calc(var(--qgis-row-h) / 2 - 2px);
+}
+.qgis-tree > .qgis-node > .qgis-row .qgis-check-anchor {
+  margin-left: -6px; /* tweak: -2px / -4px if needed */
+}
+
+/* FIX: stop the children spine from touching/overlapping the parent checkbox */
+.qgis-node.has-open-children > .qgis-children::before{
+  top: calc(var(--qgis-elbow-y) - 16px);
+}
+/* Shorten horizontal connector (elbow) lines */
+.qgis-children > .qgis-node::before{
+  width: calc(var(--qgis-elbow-w) + 1px); /* try -3px to -6px */
+}
+/* Reduce gap between checkbox and horizontal connector */
+.qgis-children > .qgis-node::before{
+  width: calc(var(--qgis-elbow-w) + 3px);
+}
+
 /* Section header with title + chevron */
 .side-section-header {
   width: 100%;
@@ -586,6 +771,7 @@ body {
 
 /* Search bar */
 .map-search {
+  flex: 1;
   position: relative; /* important for dropdown positioning */
 }
 
@@ -633,7 +819,6 @@ body {
   border-radius: 8px;
 }
 
-
 /* ADMIN PANEL NAV */
 
 .admin-nav-item {
@@ -667,4 +852,454 @@ body {
 
 .side-option-label {
   white-space: nowrap; /* prevents "Spatial level" from wrapping */
+}
+
+
+
+/* --------- DATA IMPORT PAGE (full width) ------ */
+.import-page {
+  width: 100%;
+  min-width: 0;
+}
+
+/* 2 columns on desktop, 1 on mobile */
+.import-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Main card */
+.import-main {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+  min-width: 0;
+}
+
+.import-head {
+  margin-bottom: 10px;
+}
+
+.import-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.import-subtitle {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.import-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Aside card */
+.import-aside {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+  height: fit-content;
+}
+
+.import-aside-title {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.import-checklist {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.5;
+}
+
+/* Responsive: stack on small screens */
+@media (max-width: 900px) {
+  .import-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+
+/* -----------------------------
+   SCENARIOS PAGE
+----------------------------- */
+
+.scenarios-page {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Top header row */
+.page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.page-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+/* Actions (top-right) */
+.page-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Make "Save" look primary without needing new button classes */
+.btn.primary {
+  background: #111827;
+  color: #f9fafb;
+  border-color: #111827;
+}
+
+/* Sheet-like tab bar */
+.sheet-tabbar {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 12px;
+}
+
+.sheet-tab {
+  padding: 6px 10px;
+  font-size: 12px;
+  border: 1px solid #e5e7eb;
+  border-bottom: none;
+  background: #f9fafb;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  cursor: pointer;
+  color: #111827;
+}
+
+.sheet-tab.active {
+  background: #ffffff;
+  font-weight: 600;
+  position: relative;
+  top: 1px; /* little lift like a real tab */
+}
+
+/* Grid: left rail + main */
+.scenarios-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Left rail */
+.scenarios-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.rail-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.rail-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* Fields */
+.field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.field span {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.field select {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  font-size: 13px;
+  outline: none;
+}
+
+.field select:focus {
+  border-color: #111827;
+}
+
+/* Chips */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.chip {
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #111827;
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.chip:hover {
+  background: #f3f4f6;
+}
+
+/* Hint text */
+.hint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+/* Main content panel */
+.scenarios-main {
+  min-width: 0;
+}
+
+/* Panels inside main */
+.panel {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.panel-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.panel-subtitle {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.input {
+  width: 220px;
+  max-width: 100%;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  font-size: 13px;
+  outline: none;
+}
+
+.input:focus {
+  border-color: #111827;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .scenarios-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .input {
+    width: 100%;
+  }
+}
+
+
+/* === FORCE Predefined scenarios layout (put at END of index.css) === */
+
+.predef-table {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  margin-top: 10px;
+}
+
+/* Ensure grid layout applies */
+.predef-table .predef-table-head,
+.predef-table .predef-table-row {
+  display: grid !important;
+  grid-template-columns: 90px 100px 1fr 150px 80px !important;
+  column-gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+}
+
+/* header styling */
+.predef-table .predef-table-head {
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* row styling */
+.predef-table .predef-table-row {
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 13px;
+}
+
+.predef-table .predef-table-row:last-child {
+  border-bottom: none;
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.muted {
+  color: #6b7280;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* Cards grid should always be 5 on wide screens */
+.predef-cards-grid {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.scenario-mini {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.scenario-mini-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.scenario-mini-title {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.scenario-mini-desc {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 2px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.scenarios-main {
+  width: 100%;
+  min-width: 0;
+}
+
+.mini-param-list {
+  border-top: 1px solid #f3f4f6;
+  padding-top: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.mini-param-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.mini-footer {
+  font-size: 11px;
+  margin-top: auto;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .predef-cards-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .predef-table {
+    overflow-x: auto;
+  }
+  .predef-table .predef-table-head,
+  .predef-table .predef-table-row {
+    min-width: 760px;
+  }
+  .predef-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* chips in the context bar */
+.ctx-pill{
+  display:flex;
+  gap:8px;
+  align-items:baseline;
+  padding:8px 10px;
+  border:1px solid rgba(0,0,0,0.08);
+  border-radius:999px;
+  background:rgba(0,0,0,0.02);
+}
+.ctx-pill-label{
+  font-size:12px;
+  opacity:.65;
+}
+.ctx-pill-value{
+  font-weight:700;
 }
