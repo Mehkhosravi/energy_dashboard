@@ -478,6 +478,10 @@ body {
 /* Put this block AFTER your .side-section background definition */
 
 :root{
+
+   --qgis-parent-drop: 8px;  /* must match the drop height */
+  --qgis-spine-top-offset: calc(var(--qgis-row-h) - var(--qgis-parent-attach-y));
+
   --qgis-bg: #f9fafb;               /* MUST match .side-section background */
   --qgis-line: rgba(0,0,0,.35);
 
@@ -491,6 +495,10 @@ body {
   --qgis-gap: 6px;                  /* .qgis-row gap */
 
   --qgis-spine-x: 7px;              /* vertical spine x inside the gutter */
+  
+  --qgis-checkbox-h: 14px; /* must match your checkbox size */
+  --qgis-checkbox-top: calc((var(--qgis-row-h) - var(--qgis-checkbox-h)) / 2);
+  --qgis-parent-attach-y: calc(var(--qgis-checkbox-top) + var(--qgis-checkbox-h)); /* bottom of checkbox */
 
   /* checkbox LEFT EDGE inside a row = toggle width + gap */
   --qgis-checkbox-left-x: calc(var(--qgis-toggle-w) + var(--qgis-gap));
@@ -553,9 +561,10 @@ body {
 
 /* Checkbox sizing */
 .qgis-row input[type="checkbox"]{
-  width: 14px;
-  height: 14px;
+  width: var(--qgis-checkbox-h);
+  height: var(--qgis-checkbox-h);
 }
+
 
 /* Swatch */
 .qgis-swatch{
@@ -592,13 +601,18 @@ body {
   position: relative;
 }
 
-/* Vertical spine (1px block so it touches elbows perfectly) */
 .qgis-children::before{
   content:"";
   position:absolute;
   left: var(--qgis-spine-x);
-  top: calc(-1 * var(--qgis-elbow-y)); /* start at parent row center */
-  bottom: var(--qgis-elbow-y);         /* end at last child row center */
+
+  /* BEFORE */
+  /* top: calc(-1 * var(--qgis-elbow-y)); */
+
+  /* AFTER: start from bottom of parent checkbox */
+  top: calc(-1 * var(--qgis-parent-attach-y));
+
+  bottom: var(--qgis-elbow-y);
   width: 1px;
   background: var(--qgis-line);
   pointer-events:none;
@@ -629,7 +643,25 @@ body {
   pointer-events:none;
 }
 
+.qgis-node.has-open-children .qgis-check-anchor::after {
+  height: calc(var(--qgis-row-h) / 2 - 2px);
+}
+.qgis-tree > .qgis-node > .qgis-row .qgis-check-anchor {
+  margin-left: -6px; /* tweak: -2px / -4px if needed */
+}
 
+/* FIX: stop the children spine from touching/overlapping the parent checkbox */
+.qgis-node.has-open-children > .qgis-children::before{
+  top: calc(var(--qgis-elbow-y) - 16px);
+}
+/* Shorten horizontal connector (elbow) lines */
+.qgis-children > .qgis-node::before{
+  width: calc(var(--qgis-elbow-w) + 1px); /* try -3px to -6px */
+}
+/* Reduce gap between checkbox and horizontal connector */
+.qgis-children > .qgis-node::before{
+  width: calc(var(--qgis-elbow-w) + 3px);
+}
 
 /* Section header with title + chevron */
 .side-section-header {

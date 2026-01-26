@@ -59,8 +59,16 @@ function TreeNode({
     if (hasChildren && checked) setOpen(true);
   }, [checked, hasChildren]);
 
+  const nodeClassName = [
+    "qgis-node",
+    isLast ? "is-last" : "",
+    hasChildren && open ? "has-open-children" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div className={`qgis-node ${isLast ? "is-last" : ""}`}>
+    <div className={nodeClassName}>
       <div className="qgis-row">
         {/* ✅ toggle column ALWAYS reserved (aligns elbows) */}
         {hasChildren ? (
@@ -76,7 +84,10 @@ function TreeNode({
           <span className="qgis-toggle-placeholder" />
         )}
 
-        <input type="checkbox" checked={checked} onChange={onCheck} />
+        {/* ✅ anchor around checkbox so spine can attach to BOTTOM of checkbox */}
+        <span className="qgis-check-anchor">
+          <input type="checkbox" checked={checked} onChange={onCheck} />
+        </span>
 
         {swatchColor ? (
           <span className="qgis-swatch" style={{ background: swatchColor }} />
@@ -173,13 +184,13 @@ export default function LayersFiltersPanel() {
               label="Residential"
               checked={consumptionSector === "residential"}
               onCheck={() => selectConsumption("residential")}
-              swatchColor="#facc15" // yellow
+              swatchColor="#facc15"
             />
             <TreeNode
               label="Primary"
               checked={consumptionSector === "primary"}
               onCheck={() => selectConsumption("primary")}
-              swatchColor="#c4a484" // light brown
+              swatchColor="#c4a484"
             />
             <TreeNode
               label="Secondary"
@@ -191,7 +202,7 @@ export default function LayersFiltersPanel() {
               label="Tertiary"
               checked={consumptionSector === "tertiary"}
               onCheck={() => selectConsumption("tertiary")}
-              swatchColor="#f59e0b" // orange
+              swatchColor="#f59e0b"
               isLast
             />
           </TreeNode>
