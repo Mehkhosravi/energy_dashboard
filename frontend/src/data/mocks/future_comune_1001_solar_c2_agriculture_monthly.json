@@ -1,0 +1,50 @@
+[
+  {
+    "label": "Jan",
+    "value_mwh": 0.2036
+  },
+  {
+    "label": "Feb",
+    "value_mwh": 0.3811
+  },
+  {
+    "label": "Mar",
+    "value_mwh": 1.2935
+  },
+  {
+    "label": "Apr",
+    "value_mwh": 2.1666
+  },
+  {
+    "label": "May",
+    "value_mwh": 2.7354
+  },
+  {
+    "label": "Jun",
+    "value_mwh": 2.837
+  },
+  {
+    "label": "Jul",
+    "value_mwh": 2.8334
+  },
+  {
+    "label": "Aug",
+    "value_mwh": 2.4173
+  },
+  {
+    "label": "Sep",
+    "value_mwh": 1.4662
+  },
+  {
+    "label": "Oct",
+    "value_mwh": 0.8538
+  },
+  {
+    "label": "Nov",
+    "value_mwh": 0.2287
+  },
+  {
+    "label": "Dec",
+    "value_mwh": 0.0881
+  }
+]

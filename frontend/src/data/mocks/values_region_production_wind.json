@@ -1,0 +1,222 @@
+[
+  {
+    "base_group": "wind",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Marche",
+    "prov_cod": null,
+    "reg_cod": 11,
+    "territory_id": 8009,
+    "value_mwh": 1167750.668701996
+  },
+  {
+    "base_group": "wind",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Puglia",
+    "prov_cod": null,
+    "reg_cod": 16,
+    "territory_id": 8010,
+    "value_mwh": 310771504.06618416
+  },
+  {
+    "base_group": "wind",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Liguria",
+    "prov_cod": null,
+    "reg_cod": 7,
+    "territory_id": 8011,
+    "value_mwh": 6248107.575776706
+  },
+  {
+    "base_group": "wind",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Lazio",
+    "prov_cod": null,
+    "reg_cod": 12,
+    "territory_id": 8012,
+    "value_mwh": 9821839.15261674
+  },
+  {
+    "base_group": "wind",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Lombardia",
+    "prov_cod": null,
+    "reg_cod": 3,
+    "territory_id": 8013,
+    "value_mwh": 690.67192786
+  },
+  {
+    "base_group": "wind",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Trentino-Alto Adige",
+    "prov_cod": null,
+    "reg_cod": 4,
+    "territory_id": 8014,
+    "value_mwh": 5169.4785896
+  },
+  {
+    "base_group": "wind",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Molise",
+    "prov_cod": null,
+    "reg_cod": 14,
+    "territory_id": 8015,
+    "value_mwh": 32554467.4183122
+  },
+  {
+    "base_group": "wind",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Abruzzo",
+    "prov_cod": null,
+    "reg_cod": 13,
+    "territory_id": 8016,
+    "value_mwh": 30923054.1222201
+  },
+  {
+    "base_group": "wind",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Valle d'Aosta",
+    "prov_cod": null,
+    "reg_cod": 2,
+    "territory_id": 8017,
+    "value_mwh": 273798.177809
+  },
+  {
+    "base_group": "wind",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Umbria",
+    "prov_cod": null,
+    "reg_cod": 10,
+    "territory_id": 8018,
+    "value_mwh": 107194.49438603
+  },
+  {
+    "base_group": "wind",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Veneto",
+    "prov_cod": null,
+    "reg_cod": 5,
+    "territory_id": 8019,
+    "value_mwh": 894178.4831582
+  },
+  {
+    "base_group": "wind",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Sicilia",
+    "prov_cod": null,
+    "reg_cod": 19,
+    "territory_id": 8020,
+    "value_mwh": 200839224.88905245
+  },
+  {
+    "base_group": "wind",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Sardegna",
+    "prov_cod": null,
+    "reg_cod": 20,
+    "territory_id": 8021,
+    "value_mwh": 105225529.20449364
+  },
+  {
+    "base_group": "wind",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Friuli-Venezia Giulia",
+    "prov_cod": null,
+    "reg_cod": 6,
+    "territory_id": 8022,
+    "value_mwh": 346.40679138
+  },
+  {
+    "base_group": "wind",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Emilia-Romagna",
+    "prov_cod": null,
+    "reg_cod": 8,
+    "territory_id": 8023,
+    "value_mwh": 5640596.516956176
+  },
+  {
+    "base_group": "wind",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Basilicata",
+    "prov_cod": null,
+    "reg_cod": 17,
+    "territory_id": 8024,
+    "value_mwh": 151414487.1059892
+  },
+  {
+    "base_group": "wind",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Piemonte",
+    "prov_cod": null,
+    "reg_cod": 1,
+    "territory_id": 8025,
+    "value_mwh": 1825028.08186076
+  },
+  {
+    "base_group": "wind",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Campania",
+    "prov_cod": null,
+    "reg_cod": 15,
+    "territory_id": 8026,
+    "value_mwh": 183897353.37498322
+  },
+  {
+    "base_group": "wind",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Calabria",
+    "prov_cod": null,
+    "reg_cod": 18,
+    "territory_id": 8027,
+    "value_mwh": 128919445.27978168
+  },
+  {
+    "base_group": "wind",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Toscana",
+    "prov_cod": null,
+    "reg_cod": 9,
+    "territory_id": 8028,
+    "value_mwh": 17449905.127585936
+  }
+]

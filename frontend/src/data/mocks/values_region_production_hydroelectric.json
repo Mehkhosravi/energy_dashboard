@@ -1,0 +1,222 @@
+[
+  {
+    "base_group": "hydroelectric",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Marche",
+    "prov_cod": null,
+    "reg_cod": 11,
+    "territory_id": 8009,
+    "value_mwh": 14465461.2038208
+  },
+  {
+    "base_group": "hydroelectric",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Puglia",
+    "prov_cod": null,
+    "reg_cod": 16,
+    "territory_id": 8010,
+    "value_mwh": 472603.6110464
+  },
+  {
+    "base_group": "hydroelectric",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Liguria",
+    "prov_cod": null,
+    "reg_cod": 7,
+    "territory_id": 8011,
+    "value_mwh": 9849906.7687088
+  },
+  {
+    "base_group": "hydroelectric",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Lazio",
+    "prov_cod": null,
+    "reg_cod": 12,
+    "territory_id": 8012,
+    "value_mwh": 39410614.654464
+  },
+  {
+    "base_group": "hydroelectric",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Lombardia",
+    "prov_cod": null,
+    "reg_cod": 3,
+    "territory_id": 8013,
+    "value_mwh": 172834771.3456128
+  },
+  {
+    "base_group": "hydroelectric",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Trentino-Alto Adige",
+    "prov_cod": null,
+    "reg_cod": 4,
+    "territory_id": 8014,
+    "value_mwh": 755016137.4151152
+  },
+  {
+    "base_group": "hydroelectric",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Molise",
+    "prov_cod": null,
+    "reg_cod": 14,
+    "territory_id": 8015,
+    "value_mwh": 10744780.3811872
+  },
+  {
+    "base_group": "hydroelectric",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Abruzzo",
+    "prov_cod": null,
+    "reg_cod": 13,
+    "territory_id": 8016,
+    "value_mwh": 8963942.476208
+  },
+  {
+    "base_group": "hydroelectric",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Valle d'Aosta",
+    "prov_cod": null,
+    "reg_cod": 2,
+    "territory_id": 8017,
+    "value_mwh": 93503977.7284816
+  },
+  {
+    "base_group": "hydroelectric",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Umbria",
+    "prov_cod": null,
+    "reg_cod": 10,
+    "territory_id": 8018,
+    "value_mwh": 126347141.77456
+  },
+  {
+    "base_group": "hydroelectric",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Veneto",
+    "prov_cod": null,
+    "reg_cod": 5,
+    "territory_id": 8019,
+    "value_mwh": 139935027.4830512
+  },
+  {
+    "base_group": "hydroelectric",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Sicilia",
+    "prov_cod": null,
+    "reg_cod": 19,
+    "territory_id": 8020,
+    "value_mwh": 2250213.32264128
+  },
+  {
+    "base_group": "hydroelectric",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Sardegna",
+    "prov_cod": null,
+    "reg_cod": 20,
+    "territory_id": 8021,
+    "value_mwh": 5533513.211648
+  },
+  {
+    "base_group": "hydroelectric",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Friuli-Venezia Giulia",
+    "prov_cod": null,
+    "reg_cod": 6,
+    "territory_id": 8022,
+    "value_mwh": 82918564.3858336
+  },
+  {
+    "base_group": "hydroelectric",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Emilia-Romagna",
+    "prov_cod": null,
+    "reg_cod": 8,
+    "territory_id": 8023,
+    "value_mwh": 21571811.1810448
+  },
+  {
+    "base_group": "hydroelectric",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Basilicata",
+    "prov_cod": null,
+    "reg_cod": 17,
+    "territory_id": 8024,
+    "value_mwh": 942184.930384
+  },
+  {
+    "base_group": "hydroelectric",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Piemonte",
+    "prov_cod": null,
+    "reg_cod": 1,
+    "territory_id": 8025,
+    "value_mwh": 213362197.7683512
+  },
+  {
+    "base_group": "hydroelectric",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Campania",
+    "prov_cod": null,
+    "reg_cod": 15,
+    "territory_id": 8026,
+    "value_mwh": 26173536.2200048
+  },
+  {
+    "base_group": "hydroelectric",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Calabria",
+    "prov_cod": null,
+    "reg_cod": 18,
+    "territory_id": 8027,
+    "value_mwh": 6118942.484936
+  },
+  {
+    "base_group": "hydroelectric",
+    "category_code": null,
+    "domain": "production",
+    "mun_cod": null,
+    "name": "Toscana",
+    "prov_cod": null,
+    "reg_cod": 9,
+    "territory_id": 8028,
+    "value_mwh": 24285113.31212032
+  }
+]

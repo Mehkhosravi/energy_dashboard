@@ -1,0 +1,222 @@
+[
+  {
+    "base_group": null,
+    "category_code": "cons_domestic",
+    "domain": "consumption",
+    "mun_cod": null,
+    "name": "Marche",
+    "prov_cod": null,
+    "reg_cod": 11,
+    "territory_id": 8009,
+    "value_mwh": 96454996.3776275
+  },
+  {
+    "base_group": null,
+    "category_code": "cons_domestic",
+    "domain": "consumption",
+    "mun_cod": null,
+    "name": "Puglia",
+    "prov_cod": null,
+    "reg_cod": 16,
+    "territory_id": 8010,
+    "value_mwh": 272180606.4048375
+  },
+  {
+    "base_group": null,
+    "category_code": "cons_domestic",
+    "domain": "consumption",
+    "mun_cod": null,
+    "name": "Liguria",
+    "prov_cod": null,
+    "reg_cod": 7,
+    "territory_id": 8011,
+    "value_mwh": 106630344.731848
+  },
+  {
+    "base_group": null,
+    "category_code": "cons_domestic",
+    "domain": "consumption",
+    "mun_cod": null,
+    "name": "Lazio",
+    "prov_cod": null,
+    "reg_cod": 12,
+    "territory_id": 8012,
+    "value_mwh": 418496807.3648943
+  },
+  {
+    "base_group": null,
+    "category_code": "cons_domestic",
+    "domain": "consumption",
+    "mun_cod": null,
+    "name": "Lombardia",
+    "prov_cod": null,
+    "reg_cod": 3,
+    "territory_id": 8013,
+    "value_mwh": 729108241.3376704
+  },
+  {
+    "base_group": null,
+    "category_code": "cons_domestic",
+    "domain": "consumption",
+    "mun_cod": null,
+    "name": "Trentino-Alto Adige",
+    "prov_cod": null,
+    "reg_cod": 4,
+    "territory_id": 8014,
+    "value_mwh": 69759002.8078005
+  },
+  {
+    "base_group": null,
+    "category_code": "cons_domestic",
+    "domain": "consumption",
+    "mun_cod": null,
+    "name": "Molise",
+    "prov_cod": null,
+    "reg_cod": 14,
+    "territory_id": 8015,
+    "value_mwh": 17648573.8559111
+  },
+  {
+    "base_group": null,
+    "category_code": "cons_domestic",
+    "domain": "consumption",
+    "mun_cod": null,
+    "name": "Abruzzo",
+    "prov_cod": null,
+    "reg_cod": 13,
+    "territory_id": 8016,
+    "value_mwh": 83000962.8117678
+  },
+  {
+    "base_group": null,
+    "category_code": "cons_domestic",
+    "domain": "consumption",
+    "mun_cod": null,
+    "name": "Valle d'Aosta",
+    "prov_cod": null,
+    "reg_cod": 2,
+    "territory_id": 8017,
+    "value_mwh": 10020146.4377479
+  },
+  {
+    "base_group": null,
+    "category_code": "cons_domestic",
+    "domain": "consumption",
+    "mun_cod": null,
+    "name": "Umbria",
+    "prov_cod": null,
+    "reg_cod": 10,
+    "territory_id": 8018,
+    "value_mwh": 59460738.229426
+  },
+  {
+    "base_group": null,
+    "category_code": "cons_domestic",
+    "domain": "consumption",
+    "mun_cod": null,
+    "name": "Veneto",
+    "prov_cod": null,
+    "reg_cod": 5,
+    "territory_id": 8019,
+    "value_mwh": 362072785.2716075
+  },
+  {
+    "base_group": null,
+    "category_code": "cons_domestic",
+    "domain": "consumption",
+    "mun_cod": null,
+    "name": "Sicilia",
+    "prov_cod": null,
+    "reg_cod": 19,
+    "territory_id": 8020,
+    "value_mwh": 378073651.9154595
+  },
+  {
+    "base_group": null,
+    "category_code": "cons_domestic",
+    "domain": "consumption",
+    "mun_cod": null,
+    "name": "Sardegna",
+    "prov_cod": null,
+    "reg_cod": 20,
+    "territory_id": 8021,
+    "value_mwh": 148681393.9121911
+  },
+  {
+    "base_group": null,
+    "category_code": "cons_domestic",
+    "domain": "consumption",
+    "mun_cod": null,
+    "name": "Friuli-Venezia Giulia",
+    "prov_cod": null,
+    "reg_cod": 6,
+    "territory_id": 8022,
+    "value_mwh": 86907007.7229026
+  },
+  {
+    "base_group": null,
+    "category_code": "cons_domestic",
+    "domain": "consumption",
+    "mun_cod": null,
+    "name": "Emilia-Romagna",
+    "prov_cod": null,
+    "reg_cod": 8,
+    "territory_id": 8023,
+    "value_mwh": 325650514.957624
+  },
+  {
+    "base_group": null,
+    "category_code": "cons_domestic",
+    "domain": "consumption",
+    "mun_cod": null,
+    "name": "Basilicata",
+    "prov_cod": null,
+    "reg_cod": 17,
+    "territory_id": 8024,
+    "value_mwh": 31636022.482454
+  },
+  {
+    "base_group": null,
+    "category_code": "cons_domestic",
+    "domain": "consumption",
+    "mun_cod": null,
+    "name": "Piemonte",
+    "prov_cod": null,
+    "reg_cod": 1,
+    "territory_id": 8025,
+    "value_mwh": 290289508.9254111
+  },
+  {
+    "base_group": null,
+    "category_code": "cons_domestic",
+    "domain": "consumption",
+    "mun_cod": null,
+    "name": "Campania",
+    "prov_cod": null,
+    "reg_cod": 15,
+    "territory_id": 8026,
+    "value_mwh": 353958914.793125
+  },
+  {
+    "base_group": null,
+    "category_code": "cons_domestic",
+    "domain": "consumption",
+    "mun_cod": null,
+    "name": "Calabria",
+    "prov_cod": null,
+    "reg_cod": 18,
+    "territory_id": 8027,
+    "value_mwh": 131503976.7689325
+  },
+  {
+    "base_group": null,
+    "category_code": "cons_domestic",
+    "domain": "consumption",
+    "mun_cod": null,
+    "name": "Toscana",
+    "prov_cod": null,
+    "reg_cod": 9,
+    "territory_id": 8028,
+    "value_mwh": 262519244.352773
+  }
+]
