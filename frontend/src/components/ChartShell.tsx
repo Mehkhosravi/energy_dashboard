@@ -35,6 +35,9 @@ export default function ChartShell() {
   const [consFilter, setConsFilter] = useState("total");
   const [prodFilter, setProdFilter] = useState("total");
   const [futFilter, setFutFilter] = useState("solar");
+  
+  // --- Local State for Hourly Month (1-12) ---
+  const [hourlyMonth, setHourlyMonth] = useState(1);
 
   // --- Data State ---
   const [consData, setConsData] = useState<DemoDataResult>({ monthly: null, hourly: null, loading: false });
@@ -54,8 +57,8 @@ export default function ChartShell() {
   // Known demo territories
   const isDemoTerritory = useMemo(() => {
     if (!territoryCode) return false;
-    // Province 1 (Torino), Comune 1001, Comune 1002
-    return [1, 1001, 1002].includes(territoryCode);
+    // Province 1 (Torino), Comune 1001 (Agliè), Comune 1002 (Airasca), Municipality 1272 (Torino)
+    return [1, 1001, 1002, 1272].includes(territoryCode);
   }, [territoryCode]);
 
   // --- Data Fetching ---
@@ -67,9 +70,9 @@ export default function ChartShell() {
         return;
     }
     setConsData(prev => ({ ...prev, loading: true }));
-    fetchDemoData(territoryCode, level, "consumption", consFilter)
+    fetchDemoData(territoryCode, level, "consumption", consFilter, hourlyMonth)
       .then(setConsData);
-  }, [territoryCode, level, consFilter, isDemoTerritory]);
+  }, [territoryCode, level, consFilter, hourlyMonth, isDemoTerritory]);
 
   // Production
   useEffect(() => {
@@ -78,9 +81,9 @@ export default function ChartShell() {
         return;
     }
     setProdData(prev => ({ ...prev, loading: true }));
-    fetchDemoData(territoryCode, level, "production", prodFilter)
+    fetchDemoData(territoryCode, level, "production", prodFilter, hourlyMonth)
       .then(setProdData);
-  }, [territoryCode, level, prodFilter, isDemoTerritory]);
+  }, [territoryCode, level, prodFilter, hourlyMonth, isDemoTerritory]);
 
   // Future
   useEffect(() => {
@@ -89,9 +92,9 @@ export default function ChartShell() {
         return;
     }
     setFutData(prev => ({ ...prev, loading: true }));
-    fetchDemoData(territoryCode, level, "future", futFilter)
+    fetchDemoData(territoryCode, level, "future", futFilter, hourlyMonth)
       .then(setFutData);
-  }, [territoryCode, level, futFilter, isDemoTerritory]);
+  }, [territoryCode, level, futFilter, hourlyMonth, isDemoTerritory]);
 
 
   const renderColumn = (
@@ -116,7 +119,9 @@ export default function ChartShell() {
         
         {/* Header + Filter */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: "#111" }}>{title}</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: "#111" }}>{title}</div>
+            </div>
             
             {/* Filter Pills */}
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -173,7 +178,25 @@ export default function ChartShell() {
 
                  {/* Row 2: Hourly */}
                  <div>
-                     <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, color: "#374151" }}>Hourly (Typical Day)</div>
+                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                         <div style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>Hourly</div>
+                         {/* Month Selector for Hourly */}
+                         <select 
+                            value={hourlyMonth} 
+                            onChange={(e) => setHourlyMonth(Number(e.target.value))}
+                            style={{ 
+                                fontSize: 11, 
+                                padding: "2px 4px", 
+                                borderRadius: 4, 
+                                border: "1px solid #ddd" 
+                            }}
+                         >
+                            {[ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ].map((m, i) => (
+                                <option key={m} value={i+1}>{m}</option>
+                            ))}
+                         </select>
+                     </div>
+                     
                      {data.hourly ? (
                         <ScenarioLineChart 
                             data={data.hourly} 
@@ -182,7 +205,7 @@ export default function ChartShell() {
                             seriesName1="Weekday"
                         />
                      ) : (
-                        <div className="muted" style={{ fontSize: 12 }}>No hourly data available for this selection.</div>
+                        <div className="muted" style={{ fontSize: 12 }}>No hourly data available for {hourlyMonth}/{new Date().getFullYear()}.</div>
                      )}
                  </div>
              </div>

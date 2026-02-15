@@ -43,7 +43,7 @@ async function loadJson(path: string) {
     // This is the most reliable way to dynamically import in Vite without knowing exact paths at compile time
     // But since we are inside a component, let's just use a large switch or object for the demo to be safe and explicit.
     
-    const modules = import.meta.glob('../../../../../data/mocks/*.json');
+    const modules = import.meta.glob('../../../../data/mocks/*.json');
     
     // Normalize path to match glob keys
     // glob keys are relative to THIS file? No, relative to where glob is called usually, or distinct.
@@ -52,7 +52,7 @@ async function loadJson(path: string) {
     // and mocks are in src/data/mocks/
     // Path should be ../../../../../data/mocks/${filename}
     
-    const relativePath = `../../../../../data/mocks/${path}`;
+    const relativePath = `../../../../data/mocks/${path}`;
     
     if (modules[relativePath]) {
         const mod: any = await modules[relativePath]();
@@ -72,17 +72,27 @@ export async function fetchDemoData(
   territoryCode: number, 
   level: string, // "province" | "municipality" -> mapped to "province" | "comune"
   column: "consumption" | "production" | "future", 
-  filter: string
+  filter: string,
+  hourlyMonth: number = 1 // 1-12
 ): Promise<DemoDataResult> {
     
   // 1. Resolve level string for filename
-  const lvl = level === "municipality" ? "comune" : "province";
-  
+  // Map Torino Municipality (1272) to Province 1 data for demo purposes if specific data is missing
+  // Or map it to one of the available municipalities
+  let effectiveCode = territoryCode;
+  let effectiveLevel = level === "municipality" ? "comune" : "province";
+
+  if (territoryCode === 1272) {
+      // Use Province 1 data for Torino Municipality in this demo (or map to existing mock if available)
+      effectiveCode = 1;
+      effectiveLevel = "province";
+  }
+
   // 2. Resolve filename parts
-  // Consumption filters: total (default), domestic, primary, secondary, tertiary
+  // Consumption filters: total (default), residential, primary, secondary, tertiary
   // Production filters: total (default), solar, wind, hydroelectric, geothermal, biomass
   
-  let filenameBase = `series_${lvl}_${territoryCode}_${column === 'future' ? 'production' : column}_monthly`;
+  let filenameBase = `series_${effectiveLevel}_${effectiveCode}_${column === 'future' ? 'production' : column}_monthly`;
   
   // Apply filter suffix
   if (filter !== "total") {
@@ -102,18 +112,15 @@ export async function fetchDemoData(
   
   const monthlyFile = `${filenameBase}.json`;
   
-  // Hourly data: For the demo, we try to find a "typical" monthly/hourly file
-  // or just use one specific file we saw: e.g. series_province_1_consumption_hourly_1_weekday.json
-  // For production, we often don't have hourly in the mocks list I saw? 
-  // I saw 'series_province_1_consumption_hourly...' but not production hourly.
-  // We will return null for hourly if not found.
+  // Hourly data
+  // Try to find the specific monthly hourly file: series_{lvl}_{code}_consumption_hourly_{month}_{type}.json
+  // e.g. series_province_1_consumption_hourly_1_weekday.json
   
   let hourlyFile = "";
   if (column === "consumption") {
-      // Just pick January (1) as representative
-      hourlyFile = `series_${lvl}_${territoryCode}_consumption_hourly_1_weekday.json`; 
-      // Note: we also have weekend. For the LineChart we might want both or just weekday.
-      // Let's try to load both if possible, but start with weekday.
+      // Construct filename for the specific month
+      // We look for "weekday" as the primary series
+      hourlyFile = `series_${effectiveLevel}_${effectiveCode}_consumption_hourly_${hourlyMonth}_weekday.json`; 
   }
   
   const [monthlyRaw, hourlyRaw] = await Promise.all([
