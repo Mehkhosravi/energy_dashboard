@@ -1,210 +1,211 @@
 // src/components/ChartShell.tsx
-import { useMemo, useRef } from "react";
-
-import DailyCharts from "./charts/DailyChart"; // <-- confirm this path is real
-import HourlyChart from "./charts/HourlyChart";
-import DownloadReportButton from "./DownloadReportButton";
-
+import { useEffect, useMemo, useState } from "react";
 import { useSelectedTerritory } from "./contexts/SelectedTerritoryContext";
-import { useDailyData } from "../hooks/useDailyData";
-import useMonthlyData, { type BackendLevel } from "../hooks/useMonthlyData";
-import { useHourlyCalendarData } from "../hooks/useHourlyCalendarData";
+import { fetchDemoData, type DemoDataResult } from "./pages/scenarios/predefined/DemoData";
+import ScenarioBarChart from "./pages/scenarios/ScenarioBarChart";
+import ScenarioLineChart from "./pages/scenarios/ScenarioLineChart";
 
-import MonthlyChart from "./charts/MonthlyChart";
-import type { TerritoryLevel } from "./TerritoryLevel";
+// Available Filters
+const CONSUMPTION_FILTERS = [
+  { id: "total", label: "Total" },
+  { id: "residential", label: "Residential" },
+  { id: "primary", label: "Primary" },
+  { id: "secondary", label: "Secondary" },
+  { id: "tertiary", label: "Tertiary" },
+];
 
-// Map frontend TerritoryLevel -> backend API level
-function toBackendLevel(level: TerritoryLevel): BackendLevel {
-  return level === "municipality" ? "comune" : level;
-}
+const PRODUCTION_FILTERS = [
+  { id: "total", label: "Total" },
+  { id: "solar", label: "Solar" },
+  { id: "wind", label: "Wind" },
+  { id: "hydroelectric", label: "Hydro" },
+  { id: "geothermal", label: "Geo" },
+  { id: "biomass", label: "Biomass" },
+];
+
+const FUTURE_FILTERS = [
+  { id: "solar", label: "Solar" },
+  { id: "wind", label: "Wind" },
+];
 
 export default function ChartShell() {
   const { selectedTerritory } = useSelectedTerritory();
 
-  const chartRefs = useRef<Record<string, HTMLElement | null>>({});
-  const titlePlace = selectedTerritory?.name ?? "selected territory";
+  // --- Local State for filters ---
+  const [consFilter, setConsFilter] = useState("total");
+  const [prodFilter, setProdFilter] = useState("total");
+  const [futFilter, setFutFilter] = useState("solar");
 
-  // -----------------------------
-  // Monthly (multi-level)
-  // -----------------------------
-  const monthlyLabel: TerritoryLevel = selectedTerritory?.level ?? "province";
+  // --- Data State ---
+  const [consData, setConsData] = useState<DemoDataResult>({ monthly: null, hourly: null, loading: false });
+  const [prodData, setProdData] = useState<DemoDataResult>({ monthly: null, hourly: null, loading: false });
+  const [futData, setFutData] = useState<DemoDataResult>({ monthly: null, hourly: null, loading: false });
 
-  const monthlyBackendLevel: BackendLevel = selectedTerritory
-    ? toBackendLevel(selectedTerritory.level)
-    : "province";
-
-  const monthlyTerritoryCode = useMemo(() => {
+  // Resolve Codes
+  const territoryCode = useMemo(() => {
     if (!selectedTerritory) return null;
     if (selectedTerritory.level === "region") return selectedTerritory.codes.reg ?? null;
     if (selectedTerritory.level === "province") return selectedTerritory.codes.prov ?? null;
-    return selectedTerritory.codes.mun ?? null; // municipality -> comune_code
+    return selectedTerritory.codes.mun ?? null; 
   }, [selectedTerritory]);
+  
+  const level = selectedTerritory?.level ?? "province"; // frontend level
 
-  const monthly = useMonthlyData(monthlyBackendLevel, monthlyTerritoryCode, 2019, 0);
+  // Known demo territories
+  const isDemoTerritory = useMemo(() => {
+    if (!territoryCode) return false;
+    // Province 1 (Torino), Comune 1001, Comune 1002
+    return [1, 1001, 1002].includes(territoryCode);
+  }, [territoryCode]);
 
-  // -----------------------------
-  // Daily (multi-level)
-  // -----------------------------
-  const dailyBackendLevel: BackendLevel = selectedTerritory
-    ? toBackendLevel(selectedTerritory.level)
-    : "province";
+  // --- Data Fetching ---
+  
+  // Consumption
+  useEffect(() => {
+    if (!isDemoTerritory || !territoryCode) {
+        setConsData({ monthly: null, hourly: null, loading: false });
+        return;
+    }
+    setConsData(prev => ({ ...prev, loading: true }));
+    fetchDemoData(territoryCode, level, "consumption", consFilter)
+      .then(setConsData);
+  }, [territoryCode, level, consFilter, isDemoTerritory]);
 
-  const dailyTerritoryCode = useMemo(() => {
-    if (!selectedTerritory) return null;
-    if (selectedTerritory.level === "region") return selectedTerritory.codes.reg ?? null;
-    if (selectedTerritory.level === "province") return selectedTerritory.codes.prov ?? null;
-    return selectedTerritory.codes.mun ?? null; // municipality -> comune_code
-  }, [selectedTerritory]);
+  // Production
+  useEffect(() => {
+    if (!isDemoTerritory || !territoryCode) {
+        setProdData({ monthly: null, hourly: null, loading: false });
+        return;
+    }
+    setProdData(prev => ({ ...prev, loading: true }));
+    fetchDemoData(territoryCode, level, "production", prodFilter)
+      .then(setProdData);
+  }, [territoryCode, level, prodFilter, isDemoTerritory]);
 
-  const {
-    chartData: chartDailyData,
-    dailyLoading,
-    dailyError,
-  } = useDailyData(dailyBackendLevel, dailyTerritoryCode, {
-    year: 2019,
-    domain: "consumption",
-  });
+  // Future
+  useEffect(() => {
+    if (!isDemoTerritory || !territoryCode) {
+        setFutData({ monthly: null, hourly: null, loading: false });
+        return;
+    }
+    setFutData(prev => ({ ...prev, loading: true }));
+    fetchDemoData(territoryCode, level, "future", futFilter)
+      .then(setFutData);
+  }, [territoryCode, level, futFilter, isDemoTerritory]);
 
-  // -----------------------------
-  // Hourly (multi-level)
-  // -----------------------------
-   const hourlyBackendLevel: BackendLevel = selectedTerritory
-    ? toBackendLevel(selectedTerritory.level)
-    : "province";
 
-  const hourlyTerritoryCode = useMemo(() => {
-    if (!selectedTerritory) return null;
-    if (selectedTerritory.level === "region") return selectedTerritory.codes.reg ?? null;
-    if (selectedTerritory.level === "province") return selectedTerritory.codes.prov ?? null;
-    return selectedTerritory.codes.mun ?? null;
-  }, [selectedTerritory]);
+  const renderColumn = (
+    title: string, 
+    filters: { id: string; label: string }[], 
+    activeFilter: string, 
+    setFilter: (v: string) => void,
+    data: DemoDataResult,
+    color: string
+  ) => {
+    return (
+      <div className="chart-column" 
+           style={{ 
+             background: "#fff", 
+             borderRadius: 12, 
+             border: "1px solid #e5e7eb", 
+             padding: 16,
+             display: "flex",
+             flexDirection: "column",
+             gap: 16
+           }}>
+        
+        {/* Header + Filter */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#111" }}>{title}</div>
+            
+            {/* Filter Pills */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {filters.map(f => {
+                    const active = f.id === activeFilter;
+                    return (
+                        <button
+                            key={f.id}
+                            onClick={() => setFilter(f.id)}
+                            style={{
+                                border: "none",
+                                background: active ? "#2563eb" : "#f3f4f6",
+                                color: active ? "#fff" : "#4b5563",
+                                padding: "4px 10px",
+                                borderRadius: 16,
+                                fontSize: 12,
+                                fontWeight: 500,
+                                cursor: "pointer",
+                                transition: "all 0.2s"
+                            }}
+                        >
+                            {f.label}
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
 
-  const {
-    chartData: chartHourlyData,
-    hourlyLoading,
-    hourlyError,
-  } = useHourlyCalendarData(hourlyBackendLevel, hourlyTerritoryCode, {
-    year: 2019,
-    scenario: 0,
-    domain: "consumption",
-  });
+        {/* Content */}
+        {!territoryCode ? (
+             <div className="muted" style={{ marginTop: 20 }}>Select a territory</div>
+        ) : !isDemoTerritory ? (
+             <div className="muted" style={{ marginTop: 20, fontStyle: "italic" }}>
+                 Data not available for this territory in demo. <br/>
+                 Try <span style={{fontWeight: 600}}>Torino (Prov)</span>, <span style={{fontWeight: 600}}>Agliè</span>, or <span style={{fontWeight: 600}}>Airasca</span>.
+             </div>
+        ) : data.loading ? (
+             <div className="muted" style={{ marginTop: 20 }}>Loading...</div>
+        ) : (
+             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                 {/* Row 1: Monthly */}
+                 <div>
+                     <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, color: "#374151" }}>Monthly</div>
+                     {data.monthly ? (
+                        <ScenarioBarChart 
+                            data={data.monthly} 
+                            color={color} 
+                            unit="MWh"
+                        />
+                     ) : (
+                        <div className="muted" style={{ fontSize: 12 }}>No monthly data available</div>
+                     )}
+                 </div>
+
+                 {/* Row 2: Hourly */}
+                 <div>
+                     <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, color: "#374151" }}>Hourly (Typical Day)</div>
+                     {data.hourly ? (
+                        <ScenarioLineChart 
+                            data={data.hourly} 
+                            color={color}
+                            unit="MWh"
+                            seriesName1="Weekday"
+                        />
+                     ) : (
+                        <div className="muted" style={{ fontSize: 12 }}>No hourly data available for this selection.</div>
+                     )}
+                 </div>
+             </div>
+        )}
+
+      </div>
+    );
+  };
 
   return (
-    <section className="charts">
-      {/* Monthly row */}
-      <div className="chart-row">
-        <div className="chart-card">
-          <div className="chart-header">
-            <h3>Monthly production and consumption</h3>
-            <span className="chart-subtitle">In GWh, for the {titlePlace}</span>
-          </div>
-
-          <div
-            className="chart-container chart-export-block"
-            ref={(el) => {
-              chartRefs.current["monthly production and consumption"] = el;
-            }}
-          >
-            <MonthlyChart
-              data={monthly.data}
-              loading={monthly.loading}
-              error={monthly.error}
-              hasTerritory={monthly.hasTerritory}
-              territoryLabel={monthlyLabel}
-              territoryName={selectedTerritory?.name ?? null}
-            />
-          </div>
-        </div>
-
-        <div className="chart-insight">
-          <h4 className="chart-insight-title">Key Insights - Shares</h4>
-          <p className="chart-insight-text">
-            Explain which renewable source is dominant, which ones contribute less,
-            and how this compares to total consumption.
-          </p>
-        </div>
+    <section className="charts" style={{ display: "block" }}>
+      {/* 3 Column Grid */}
+      <div style={{ 
+          display: "grid", 
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))", 
+          gap: 16,
+          alignItems: "start",
+          marginBottom: 32
+      }}>
+         {renderColumn("Consumption", CONSUMPTION_FILTERS, consFilter, setConsFilter, consData, "#3b82f6")}
+         {renderColumn("Production", PRODUCTION_FILTERS, prodFilter, setProdFilter, prodData, "#10b981")}
+         {renderColumn("Future Production", FUTURE_FILTERS, futFilter, setFutFilter, futData, "#8b5cf6")}
       </div>
-
-      {/* Daily row */}
-      <div className="chart-row">
-        <div className="chart-card">
-          <div className="chart-header">
-            <h3>Daily production and consumption</h3>
-            <span className="chart-subtitle">In GWh, for the {titlePlace}</span>
-          </div>
-
-          <div
-            className="chart-container chart-export-block"
-            style={{ minHeight: 360 }}
-            ref={(el) => {
-              chartRefs.current["daily consumption"] = el;
-            }}
-          >
-            {dailyTerritoryCode == null ? (
-              <div className="chart-placeholder">
-                Select a territory to see weekday vs weekend profile.
-              </div>
-            ) : dailyLoading ? (
-              <div className="chart-placeholder">Loading...</div>
-            ) : dailyError ? (
-              <div className="chart-placeholder text-red-600">Error: {dailyError}</div>
-            ) : chartDailyData.length === 0 ? (
-              <div className="chart-placeholder">No daily data available.</div>
-            ) : (
-              <DailyCharts data={chartDailyData} />
-            )}
-          </div>
-        </div>
-
-        <div className="chart-insight">
-          <h4 className="chart-insight-title">Key Insights - Shares</h4>
-          <p className="chart-insight-text">
-            Explain which renewable source is dominant, which ones contribute less,
-            and how this compares to total consumption.
-          </p>
-        </div>
-      </div>
-
-      {/* Hourly row */}
-            {/* Hourly row */}
-      <div className="chart-row">
-        <div className="chart-card">
-          <div className="chart-header">
-            <h3>Hourly production and consumption</h3>
-            <span className="chart-subtitle">In GWh, for the {titlePlace}</span>
-          </div>
-
-          <div
-            className="chart-container chart-export-block"
-            ref={(el) => {
-              chartRefs.current["hourly production and consumption"] = el;
-            }}
-          >
-            {hourlyTerritoryCode == null ? (
-              <div className="chart-placeholder">
-                Select a territory to see hourly profiles.
-              </div>
-            ) : hourlyLoading ? (
-              <div className="chart-placeholder">Loading...</div>
-            ) : hourlyError ? (
-              <div className="chart-placeholder text-red-600">Error: {hourlyError}</div>
-            ) : chartHourlyData.length === 0 ? (
-              <div className="chart-placeholder">No hourly data available.</div>
-            ) : (
-              <HourlyChart data={chartHourlyData} />
-            )}
-          </div>
-        </div>
-
-        <div className="chart-insight">
-          <h4 className="chart-insight-title">Key Insights - Shares</h4>
-          <p className="chart-insight-text">
-            Explain which renewable source is dominant, which ones contribute less,
-            and how this compares to total consumption.
-          </p>
-        </div>
-      </div>
-
     </section>
   );
 }

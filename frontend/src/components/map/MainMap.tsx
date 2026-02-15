@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import type { Feature, Geometry } from "geojson";
 
+
 import Legend from "../Legend";
 import { useGeoData } from "./hooks/useGeoData";
 import { useMapFilters } from "../contexts/MapFiltersContext";
@@ -14,24 +15,15 @@ import {
   type BackendLevel,
 } from "./hooks/mapFiltersToGeoArgs";
 
-// ---------- Minimal helpers (same as TestMap) ----------
-const CONSUMPTION_PALETTE = [
-  "#FEE5D9",
-  "#FCBBA1",
-  "#FC9272",
-  "#FB6A4A",
-  "#DE2D26",
-  "#A50F15",
-];
+import {
+  CONSUMPTION_SWATCH,
+  PRODUCTION_SWATCH,
+  makeSequentialFromBase,
+  type ProductionType,
+  type ConsumptionSector,
+} from "../LayersFilters.assets";
 
-const PRODUCTION_PALETTE = [
-  "#FFFFE5",
-  "#F7FCB9",
-  "#C2E699",
-  "#78C679",
-  "#31A354",
-  "#006837",
-];
+
 
 
 function toNum(x: unknown): number | null {
@@ -136,11 +128,21 @@ export default function MainMap() {
   const level = useMemo(() => scaleToBackendLevel(filters.scale), [filters.scale]);
   const domain = useMemo(() => themeToBackendDomain(filters.theme), [filters.theme]); 
   const palette = useMemo(() => {
+    // 1. Production
     if (domain === "production" || domain === "future_production") {
-      return PRODUCTION_PALETTE;
+      const pType = (filters.baseGroup as ProductionType) || "all";
+      const baseColor = PRODUCTION_SWATCH[pType] ?? PRODUCTION_SWATCH.all;
+      return makeSequentialFromBase(baseColor!);
     }
-      return CONSUMPTION_PALETTE;
-  }, [domain]);
+
+    // 2. Consumption
+    let cType = (filters.baseGroup as any) || "all";
+    if (cType === "domestic") cType = "residential"; // Fix mismatch
+
+    // For 'all' consumption, we might want the original red scale, or generate one from the base red.
+    const baseColor = CONSUMPTION_SWATCH[cType as ConsumptionSector] ?? CONSUMPTION_SWATCH.all;
+    return makeSequentialFromBase(baseColor!);
+  }, [domain, filters.baseGroup]);
   const resolution = useMemo(
     () => timeResolutionToBackendResolution(filters.timeResolution),
     [filters.timeResolution]
@@ -149,7 +151,7 @@ export default function MainMap() {
   // Keep these as you do in your app (replace if you have state/URL params)
   const year = 2019;
   const scenario = 0;
-  const baseGroup = useMemo(() => filters.consumptionBaseGroup, [filters.consumptionBaseGroup]);
+  const baseGroup = useMemo(() => filters.baseGroup, [filters.baseGroup]);
 
   const { geo, valuesMap, loadingGeo, error, debug } = useGeoData({
     level,

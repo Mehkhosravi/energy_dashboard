@@ -1,6 +1,6 @@
-// src/components/maps/hooks/useGeoData.ts
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FeatureCollection, Geometry } from "geojson";
+import { getJSON } from "../../../api/client";
 
 type BackendLevel = "region" | "province" | "comune";
 type AnyFC = FeatureCollection<Geometry, any>;
@@ -71,7 +71,7 @@ export type UseGeoDataArgs = {
   resolution: "annual" | "monthly" | "hourly";
   year: number;
   scenario: number;
-  baseGroup?: "domestic" | "primary" | "secondary" | "tertiary" | null;
+  baseGroup?: string | null;
 };
 
 export type UseGeoDataResult = {
@@ -170,10 +170,8 @@ export function useGeoData({
 
       try {
         console.log("[PIPE] geo:", geoUrl);
-        const resGeo = await fetch(geoUrl, { signal: controller.signal });
-        if (!resGeo.ok) throw new Error(`Geo load failed: ${resGeo.status}`);
-
-        const fc = (await resGeo.json()) as AnyFC;
+        // Replace fetch with getJSON
+        const fc = await getJSON<AnyFC>(geoUrl);
 
         // ignore stale responses
         if (reqIdRef.current !== myReqId) return;
@@ -187,10 +185,7 @@ export function useGeoData({
         setPhase("values_loading");
 
         console.log("[PIPE] values:", valuesUrl);
-        const resVals = await fetch(valuesUrl, { signal: controller.signal });
-        if (!resVals.ok) throw new Error(`Values load failed: ${resVals.status}`);
-
-        const rows = (await resVals.json()) as ValuesRow[];
+        const rows = await getJSON<ValuesRow[]>(valuesUrl);
         const m = new Map<number, number>();
 
         for (const r of rows) {

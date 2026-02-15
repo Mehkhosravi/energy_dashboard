@@ -1,6 +1,17 @@
 // src/components/LayersFiltersPanel.tsx
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, useMemo, type ReactNode } from "react";
 import { useMapFilters, type SpatialScale } from "./contexts/MapFiltersContext";
+
+import {
+  type ProductionType,
+  type ConsumptionSector,
+  CONSUMPTION_SWATCH,
+  PRODUCTION_SWATCH,
+  CONSUMPTION_LABEL,
+  PRODUCTION_LABEL,
+  PRODUCTION_ICON,
+  makeSequentialFromBase,
+} from "./LayersFilters.assets";
 
 type SectionProps = {
   title: string;
@@ -31,14 +42,15 @@ function Section({ title, info, defaultOpen = true, children }: SectionProps) {
   );
 }
 
-/** QGIS-like tree node with connectors + checkbox + optional color swatch + children */
+/** QGIS-like tree node with connectors + checkbox + optional icon + swatch + children */
 type TreeNodeProps = {
   label: string;
   checked?: boolean;
   onCheck?: () => void;
   defaultOpen?: boolean;
-  swatchColor?: string;
-  isLast?: boolean; // for connector drawing (spine stop)
+  swatchColor?: string | null;
+  icon?: ReactNode;
+  isLast?: boolean;
   children?: ReactNode;
 };
 
@@ -48,13 +60,13 @@ function TreeNode({
   onCheck,
   defaultOpen = true,
   swatchColor,
+  icon,
   isLast = false,
   children,
 }: TreeNodeProps) {
   const hasChildren = Boolean(children);
   const [open, setOpen] = useState(defaultOpen);
 
-  // nice UX: if the group becomes checked, expand it
   useEffect(() => {
     if (hasChildren && checked) setOpen(true);
   }, [checked, hasChildren]);
@@ -70,7 +82,6 @@ function TreeNode({
   return (
     <div className={nodeClassName}>
       <div className="qgis-row">
-        {/* ✅ toggle column ALWAYS reserved (aligns elbows) */}
         {hasChildren ? (
           <button
             type="button"
@@ -84,10 +95,12 @@ function TreeNode({
           <span className="qgis-toggle-placeholder" />
         )}
 
-        {/* ✅ anchor around checkbox so spine can attach to BOTTOM of checkbox */}
         <span className="qgis-check-anchor">
           <input type="checkbox" checked={checked} onChange={onCheck} />
         </span>
+
+        {/* icon slot (production children) */}
+        {icon ? <span className="qgis-icon">{icon}</span> : null}
 
         {swatchColor ? (
           <span className="qgis-swatch" style={{ background: swatchColor }} />
@@ -103,20 +116,31 @@ function TreeNode({
   );
 }
 
-type ProductionType =
-  | "all"
-  | "solar"
-  | "wind"
-  | "hydroelectric"
-  | "geothermal"
-  | "biomass";
+function ConsumptionSequentialLegend({
+  baseColor,
+  title,
+}: {
+  baseColor: string;
+  title: string;
+}) {
+  const colors = makeSequentialFromBase(baseColor);
 
-type ConsumptionSector =
-  | "all"
-  | "residential"
-  | "primary"
-  | "secondary"
-  | "tertiary";
+  return (
+    <div className="consumption-seq">
+      <div className="consumption-seq-title">{title}</div>
+      <div className="consumption-seq-bar">
+        {colors.map((c) => (
+          <span
+            key={c}
+            className="consumption-seq-step"
+            style={{ background: c }}
+          />
+        ))}
+      </div>
+      <div className="consumption-seq-hint">Low → High intensity</div>
+    </div>
+  );
+}
 
 export default function LayersFiltersPanel() {
   const {
@@ -125,39 +149,46 @@ export default function LayersFiltersPanel() {
     setScale,
     setTimeResolution,
     toggleOverlay,
-    setConsumptionBaseGroup,
+    setBaseGroup,
   } = useMapFilters();
 
-  const [productionType, setProductionType] = useState<ProductionType>("all");
-  const [consumptionSector, setConsumptionSector] =
-    useState<ConsumptionSector>("all");
+  // Derived state from context
+  const productionType = (filters.theme === "production" && filters.baseGroup) 
+    ? (filters.baseGroup as ProductionType) 
+    : "all";
 
-  // reset sub-filters when switching main theme (good UX)
-  useEffect(() => {
-    if (filters.theme === "production") setProductionType("all");
-    if (filters.theme === "consumption") setConsumptionSector("all");
-  }, [filters.theme]);
+  const consumptionSector = useMemo(() => {
+    if (filters.theme !== "consumption") return "all";
+    if (!filters.baseGroup) return "all";
+    if (filters.baseGroup === "domestic") return "residential";
+    return filters.baseGroup as ConsumptionSector;
+  }, [filters.theme, filters.baseGroup]);
+
+  // Removed local state effect
+
 
   const handleScaleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setScale(e.target.value as SpatialScale);
   };
 
   const selectConsumption = (v: ConsumptionSector) => {
-    setConsumptionSector(v);
-
-    // maps to backend base_group for consumption
     if (v === "all") {
-      setConsumptionBaseGroup(null);
+      setBaseGroup(null);
     } else if (v === "residential") {
-      setConsumptionBaseGroup("domestic");
+      setBaseGroup("domestic");
     } else {
-      setConsumptionBaseGroup(v as "primary" | "secondary" | "tertiary");
+      setBaseGroup(v as "primary" | "secondary" | "tertiary");
     }
   };
 
   const selectProduction = (v: ProductionType) => {
-    setProductionType(v);
-    // UI-only for now (later: setProductionBaseGroup(...) in context)
+    if (v === "all") setBaseGroup(null);
+    else setBaseGroup(v as any);
+  };
+  
+  const handleThemeChange = (newTheme: "consumption" | "production" | "future_potential") => {
+    setTheme(newTheme);
+    setBaseGroup(null); // Reset filter when switching theme
   };
 
   return (
@@ -171,93 +202,109 @@ export default function LayersFiltersPanel() {
           <TreeNode
             label="Consumption"
             checked={filters.theme === "consumption"}
-            onCheck={() => setTheme("consumption")}
+            onCheck={() => handleThemeChange("consumption")}
             defaultOpen={true}
           >
             <TreeNode
-              label="All"
+              label={CONSUMPTION_LABEL.all}
               checked={consumptionSector === "all"}
               onCheck={() => selectConsumption("all")}
-              swatchColor="#9ca3af"
+              swatchColor={CONSUMPTION_SWATCH.all}
             />
             <TreeNode
-              label="Residential"
+              label={CONSUMPTION_LABEL.residential}
               checked={consumptionSector === "residential"}
               onCheck={() => selectConsumption("residential")}
-              swatchColor="#facc15"
+              swatchColor={CONSUMPTION_SWATCH.residential}
             />
             <TreeNode
-              label="Primary"
+              label={CONSUMPTION_LABEL.primary}
               checked={consumptionSector === "primary"}
               onCheck={() => selectConsumption("primary")}
-              swatchColor="#c4a484"
+              swatchColor={CONSUMPTION_SWATCH.primary}
             />
             <TreeNode
-              label="Secondary"
+              label={CONSUMPTION_LABEL.secondary}
               checked={consumptionSector === "secondary"}
               onCheck={() => selectConsumption("secondary")}
-              swatchColor="#a3a3a3"
+              swatchColor={CONSUMPTION_SWATCH.secondary}
             />
             <TreeNode
-              label="Tertiary"
+              label={CONSUMPTION_LABEL.tertiary}
               checked={consumptionSector === "tertiary"}
               onCheck={() => selectConsumption("tertiary")}
-              swatchColor="#f59e0b"
+              swatchColor={CONSUMPTION_SWATCH.tertiary}
               isLast
             />
+
+            {/* ✅ sequential legend ONLY for consumption + specific sector */}
+            {filters.theme === "consumption" &&
+              consumptionSector !== "all" &&
+              CONSUMPTION_SWATCH[consumptionSector] && (
+                <ConsumptionSequentialLegend
+                  baseColor={CONSUMPTION_SWATCH[consumptionSector]!}
+                  title={`Scale for ${CONSUMPTION_LABEL[consumptionSector]}`}
+                />
+              )}
           </TreeNode>
 
           {/* Root 2 */}
           <TreeNode
             label="Production"
             checked={filters.theme === "production"}
-            onCheck={() => setTheme("production")}
+            onCheck={() => handleThemeChange("production")}
             defaultOpen={true}
           >
             <TreeNode
-              label="All"
+              label={PRODUCTION_LABEL.all}
               checked={productionType === "all"}
               onCheck={() => selectProduction("all")}
-              swatchColor="#9ca3af"
+              swatchColor={PRODUCTION_SWATCH.all}
+              icon={PRODUCTION_ICON.all}
             />
             <TreeNode
-              label="Solar"
+              label={PRODUCTION_LABEL.solar}
               checked={productionType === "solar"}
               onCheck={() => selectProduction("solar")}
-              swatchColor="#fbbf24"
+              swatchColor={PRODUCTION_SWATCH.solar}
+              icon={PRODUCTION_ICON.solar}
             />
             <TreeNode
-              label="Wind"
+              label={PRODUCTION_LABEL.wind}
               checked={productionType === "wind"}
               onCheck={() => selectProduction("wind")}
-              swatchColor="#60a5fa"
+              swatchColor={PRODUCTION_SWATCH.wind}
+              icon={PRODUCTION_ICON.wind}
             />
             <TreeNode
-              label="Hydro-electric"
+              label={PRODUCTION_LABEL.hydroelectric}
               checked={productionType === "hydroelectric"}
               onCheck={() => selectProduction("hydroelectric")}
-              swatchColor="#34d399"
+              swatchColor={PRODUCTION_SWATCH.hydroelectric}
+              icon={PRODUCTION_ICON.hydroelectric}
             />
             <TreeNode
-              label="Geothermal"
+              label={PRODUCTION_LABEL.geothermal}
               checked={productionType === "geothermal"}
               onCheck={() => selectProduction("geothermal")}
-              swatchColor="#fb7185"
+              swatchColor={PRODUCTION_SWATCH.geothermal}
+              icon={PRODUCTION_ICON.geothermal}
             />
             <TreeNode
-              label="Biomass"
+              label={PRODUCTION_LABEL.biomass}
               checked={productionType === "biomass"}
               onCheck={() => selectProduction("biomass")}
-              swatchColor="#a78bfa"
+              swatchColor={PRODUCTION_SWATCH.biomass}
+              icon={PRODUCTION_ICON.biomass}
               isLast
             />
           </TreeNode>
 
-          {/* Root 3 (last root) */}
+          {/* Root 3 */}
           <TreeNode
             label="Future potential"
             checked={filters.theme === "future_potential"}
-            onCheck={() => setTheme("future_potential")}
+            onCheck={() => handleThemeChange("future_potential")}
             defaultOpen={false}
             isLast
           />

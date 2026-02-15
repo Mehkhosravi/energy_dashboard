@@ -6,6 +6,9 @@ import {
   type BackendLevel,
   type ScenarioTerritoryResponse,
 } from "../hooks/useScenarioTerritory";
+import { useScenarioTerritoryBatch } from "../hooks/useScenarioTerritoryBatch";
+import ScenarioScatterChart from "../ScenarioScatterChart";
+import ScenarioDotChart from "../ScenarioDotChart";
 
 type Props = {
   state: {
@@ -29,9 +32,18 @@ const PREDEFINED = [
   { id: "3.2", code: "S3.2", group: "Biomass", short: "Biomass (all municipalities)", sources: ["biomass"] },
   { id: "4", code: "S4", group: "REC", short: "Full prosumer adoption", sources: ["solar"] },
   { id: "5", code: "S5", group: "REC", short: "25% prosumer adoption", sources: ["solar"] },
-  { id: "6.1", code: "S6.1", group: "Mixed", short: "100% solar+wind+biomass", sources: ["solar", "wind", "biomass"] },
-  { id: "6.2", code: "S6.2", group: "Mixed", short: "50% solar, 100% wind+biomass", sources: ["solar", "wind", "biomass"] },
 ];
+
+// Map scenario group to color
+const GROUP_COLORS: Record<string, string> = {
+    "Baseline": "#9ca3af", // gray-400
+    "Solar": "#eab308",    // yellow-500
+    "Wind": "#0ea5e9",     // sky-500
+    "Biomass": "#16a34a",  // green-600
+    "REC": "#f97316",      // orange-500
+    "Mixed": "#8b5cf6",    // violet-500
+    "Other": "#6366f1",    // indigo-500
+};
 
 function fmtValue(v: number, unit: string, format?: string) {
   if (format === "ratio" || unit === "ratio") {
@@ -115,6 +127,34 @@ export default function PredefinedScenariosPanel({
 
   // optional: keep your previous “Indexes” list for a quick glance
   const quick = useMemo(() => splitMetrics(data), [data]); // { indexes, energy }
+
+  // --- NEW: Batch fetch for Scatter Chart ---
+  const allScenarioIds = useMemo(() => PREDEFINED.map((s) => s.id), []);
+  const batch = useScenarioTerritoryBatch({
+    enabled: canLoad,
+    level: state.level,
+    year: state.year,
+    territoryCode: state.territoryCode,
+    scenarioIds: allScenarioIds,
+  });
+
+  const chartData = useMemo(() => {
+    return PREDEFINED.map((s) => {
+      const resp = batch.byScenarioId[s.id];
+      const val = resp?.values || {};
+      // Safe access
+      const ssi = val.self_sufficiency_index?.value ?? 0;
+      const sci = val.self_consumption_index?.value ?? 0;
+      return {
+        scenarioCode: s.code,
+        scenarioGroup: s.group,
+        ssi,
+        sci,
+        label: s.short,
+        color: GROUP_COLORS[s.group] ?? GROUP_COLORS["Other"],
+      };
+    });
+  }, [batch.byScenarioId]);
 
   const addScenario = (id: string) => {
     setState((s: any) => ({
@@ -202,10 +242,10 @@ export default function PredefinedScenariosPanel({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "560px minmax(0,1fr)", // wider left table
+          gridTemplateColumns: "25% 35% 35%", // 3 columns as requested
           gap: 14,
           marginTop: 12,
-          alignItems: "start", // ✅ fixes: table not starting lower
+          alignItems: "start",
         }}
       >
         {/* LEFT: compact list */}
@@ -213,15 +253,15 @@ export default function PredefinedScenariosPanel({
           <div className="predef-table-head"
             style={{
               display: "grid",
-              gridTemplateColumns: "88px 120px minmax(0,1fr) 96px",
-              columnGap: 12,
+              gridTemplateColumns: "60px 80px minmax(0,1fr)",
+              columnGap: 8,
               alignItems: "center",
+              fontSize: 13,
             }}
           >
             <div>Code</div>
             <div>Group</div>
-            <div>Description</div>
-            <div style={{ textAlign: "right" }}> </div>
+            <div>Desc.</div>
           </div>
 
 
@@ -231,39 +271,28 @@ export default function PredefinedScenariosPanel({
               <div
                 key={s.id}
                 className="predef-table-row"
-                
                 onClick={() => setActiveScenarioId(s.id)}
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "88px 120px minmax(0,1fr) 96px",
-                  columnGap: 12,
+                  gridTemplateColumns: "60px 80px minmax(0,1fr)",
+                  columnGap: 8,
                   alignItems: "center",
                   cursor: "pointer",
-                  borderRadius: 12,
-                  outline: isActive ? "2px solid rgba(59,130,246,0.7)" : "none",
-                  background: isActive ? "rgba(59,130,246,0.06)" : "transparent",
-                  padding: "10px 12px",
+                  borderRadius: 8,
+                  // refined selection style: solid border, clearer background
+                  border: isActive ? "1px solid #3b82f6" : "1px solid transparent",
+                  backgroundColor: isActive ? "#eff6ff" : "transparent", // blue-50
+                  padding: "8px 10px",
+                  fontSize: 13,
+                  transition: "all 0.2s",
                 }}
               >
-                <div className="mono">{s.code}</div>
-                <div>{s.group}</div>
+                <div className="mono" style={{fontWeight: isActive ? 700 : 500, color: isActive ? "#1d4ed8" : "inherit"}}>{s.code}</div>
+                <div style={{overflow: "hidden", textOverflow: "ellipsis"}}>{s.group}</div>
 
-                {/* ✅ description gets full width and wraps nicely */}
+                {/* description */}
                 <div className="muted" style={{ lineHeight: 1.25 }}>
                   {s.short}
-                </div>
-
-                {/* ✅ consistent Add button alignment */}
-                <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <button
-                    className="btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addScenario(s.id);
-                    }}
-                  >
-                    Add
-                  </button>
                 </div>
               </div>
 
@@ -282,14 +311,11 @@ export default function PredefinedScenariosPanel({
           }}
         >
           {/* card header */}
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ marginBottom: 12 }}>
             <div>
               <div style={{ fontSize: 18, fontWeight: 700 }}>{activeScenario.code}</div>
-              <div className="muted">{activeScenario.short}</div>
+              <div className="muted" style={{fontSize: 14}}>{activeScenario.short}</div>
             </div>
-            <button className="btn" onClick={() => addScenario(activeScenario.id)}>
-              Add
-            </button>
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
@@ -412,6 +438,44 @@ export default function PredefinedScenariosPanel({
             )}
           </div>
         </aside>
+
+        {/* NEW RIGHT COLUMN: CHART */}
+        <div
+            className="panel-chart-card"
+            style={{
+                padding: 14,
+                borderRadius: 14,
+                border: "1px solid rgba(0,0,0,0.08)",
+                background: "white",
+                // Make this column scrollable if content overflows
+                maxHeight: "90vh",
+                overflowY: "auto",
+            }}
+        >
+            <div style={{fontWeight: 700, marginBottom: 12}}>Comparison</div>
+            {canLoad ? (
+                <>
+                  <ScenarioDotChart 
+                    title="Self-Sufficiency Index (SSI)" 
+                    data={chartData.map(d => ({ label: d.scenarioCode, value: d.ssi, color: d.color, fullLabel: d.label }))}
+                  />
+                  <ScenarioDotChart 
+                    title="Self-Consumption Index (SCI)" 
+                    data={chartData.map(d => ({ label: d.scenarioCode, value: d.sci, color: d.color, fullLabel: d.label }))}
+                  />
+                  <ScenarioScatterChart data={chartData} loading={batch.loading} />
+                </>
+            ) : (
+                <div className="muted">Select territory to compare scenarios.</div>
+            )}
+            
+            <div style={{marginTop: 20, fontSize: 13}} className="muted">
+                <p>
+                    <strong>Self-consumption (X):</strong> Share of produced energy consumed locally.<br/>
+                    <strong>Self-sufficiency (Y):</strong> Share of consumption covered by local production.
+                </p>
+            </div>
+        </div>
       </div>
 
       {/* Optional: small helper */}

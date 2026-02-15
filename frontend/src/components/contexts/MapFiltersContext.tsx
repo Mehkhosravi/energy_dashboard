@@ -5,13 +5,15 @@ export type SpatialScale = "region" | "province" | "municipality";
 export type TemporalResolution = "annual" | "monthly" | "daily" | "hourly";
 export type ConstraintOverlay = "heritage" | "air_quality" | "high_altitude";
 export type ConsumptionBaseGroup = "domestic" | "primary" | "secondary" | "tertiary" | null;
+export type ProductionBaseGroup = "solar" | "wind" | "hydroelectric" | "geothermal" | "biomass" | null;
+export type BaseGroup = ConsumptionBaseGroup | ProductionBaseGroup;
 
 export type MapFilters = {
   theme: DataTheme;
   scale: SpatialScale;
   timeResolution: TemporalResolution;
   overlays: ConstraintOverlay[];
-  consumptionBaseGroup: ConsumptionBaseGroup;
+  baseGroup: BaseGroup;
 };
 
 type MapFiltersContextValue = {
@@ -21,7 +23,7 @@ type MapFiltersContextValue = {
   setTimeResolution: (r: TemporalResolution) => void;
   toggleOverlay: (o: ConstraintOverlay) => void;
   setOverlays: (o: ConstraintOverlay[]) => void;
-  setConsumptionBaseGroup: (bg: ConsumptionBaseGroup) => void;
+  setBaseGroup: (bg: BaseGroup) => void;
   resetFilters: () => void;
 };
 
@@ -30,7 +32,7 @@ const DEFAULT_FILTERS: MapFilters = {
   scale: "province",
   timeResolution: "annual",
   overlays: [],
-  consumptionBaseGroup: null,
+  baseGroup: null,
 };
 
 const Ctx = createContext<MapFiltersContextValue | undefined>(undefined);
@@ -54,7 +56,7 @@ export function MapFiltersProvider({ children }: { children: React.ReactNode }) 
           overlays: p.overlays.includes(o) ? p.overlays.filter((x) => x !== o) : [...p.overlays, o],
         })),
       setOverlays: (overlays) => setFilters((p) => ({ ...p, overlays })),
-      setConsumptionBaseGroup: (consumptionBaseGroup) => setFilters((p) => ({ ...p, consumptionBaseGroup })),
+      setBaseGroup: (baseGroup) => setFilters((p) => ({ ...p, baseGroup })),
       resetFilters: () => setFilters(DEFAULT_FILTERS),
     };
   }, [filters]);

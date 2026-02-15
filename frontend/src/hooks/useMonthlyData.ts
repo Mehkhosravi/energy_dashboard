@@ -1,9 +1,7 @@
 // src/hooks/useMonthlyData.ts
 import { useEffect, useMemo, useState } from "react";
+import { api } from "../api/client";
 
-const API_BASE = "http://localhost:5000";
-
-// ✅ Backend uses "comune"
 export type BackendLevel = "region" | "province" | "comune";
 
 export type SeriesPoint = { x: number; value_mwh: number };
@@ -35,27 +33,6 @@ const MONTH_LABELS = [
 
 function mwhToGwh(mwh: number): number {
   return mwh / 1000;
-}
-
-function buildSeriesUrl(params: Record<string, string | number | undefined>) {
-  const usp = new URLSearchParams();
-  Object.entries(params).forEach(([k, v]) => {
-    if (v === undefined || v === null || v === "") return;
-    usp.set(k, String(v));
-  });
-  return `${API_BASE}/charts/series?${usp.toString()}`;
-}
-
-async function fetchSeries(url: string, signal: AbortSignal): Promise<SeriesPoint[]> {
-  const res = await fetch(url, { signal });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(
-      `Failed: ${res.status} ${res.statusText}${text ? ` — ${text}` : ""}`
-    );
-  }
-  const json = (await res.json()) as SeriesPoint[];
-  return Array.isArray(json) ? json : [];
 }
 
 // ✅ backend param names confirmed by you
@@ -113,80 +90,13 @@ export default function useMonthlyData(
 
         const key = codeParamKey(level);
 
-        const baseParams: Record<string, string | number | undefined> = {
+        const baseParams: Record<string, any> = {
           level,
           resolution: "monthly",
           year,
           scenario,
-          [key]: territoryCode,
         };
-
-        // totals
-        const totalConsUrl = buildSeriesUrl({
-          ...baseParams,
-          domain: "consumption",
-        });
-
-        const totalProdUrl = buildSeriesUrl({
-          ...baseParams,
-          domain: "production",
-        });
-
-        // consumption categories
-        const consResidentialUrl = buildSeriesUrl({
-          ...baseParams,
-          domain: "consumption",
-          category_code: "cons_domestic",
-        });
-
-        const consPrimaryUrl = buildSeriesUrl({
-          ...baseParams,
-          domain: "consumption",
-          category_code: "cons_primary",
-        });
-
-        const consSecondaryUrl = buildSeriesUrl({
-          ...baseParams,
-          domain: "consumption",
-          category_code: "cons_secondary",
-        });
-
-        const consTertiaryUrl = buildSeriesUrl({
-          ...baseParams,
-          domain: "consumption",
-          category_code: "cons_tertiary",
-        });
-
-        // production base_groups
-        const prodSolarUrl = buildSeriesUrl({
-          ...baseParams,
-          domain: "production",
-          base_group: "solar",
-        });
-
-        const prodWindUrl = buildSeriesUrl({
-          ...baseParams,
-          domain: "production",
-          base_group: "wind",
-        });
-
-        const prodHydroUrl = buildSeriesUrl({
-          ...baseParams,
-          domain: "production",
-          base_group: "hydroelectric",
-        });
-
-        const prodGeoUrl = buildSeriesUrl({
-          ...baseParams,
-          domain: "production",
-          base_group: "geothermal",
-        });
-
-        const prodBiomassUrl = buildSeriesUrl({
-          ...baseParams,
-          domain: "production",
-          base_group: "biomass",
-        });
+        baseParams[key] = territoryCode;
 
         const [
           totalCons,
@@ -201,17 +111,17 @@ export default function useMonthlyData(
           prodGeo,
           prodBiomass,
         ] = await Promise.all([
-          fetchSeries(totalConsUrl, controller.signal),
-          fetchSeries(totalProdUrl, controller.signal),
-          fetchSeries(consResidentialUrl, controller.signal),
-          fetchSeries(consPrimaryUrl, controller.signal),
-          fetchSeries(consSecondaryUrl, controller.signal),
-          fetchSeries(consTertiaryUrl, controller.signal),
-          fetchSeries(prodSolarUrl, controller.signal),
-          fetchSeries(prodWindUrl, controller.signal),
-          fetchSeries(prodHydroUrl, controller.signal),
-          fetchSeries(prodGeoUrl, controller.signal),
-          fetchSeries(prodBiomassUrl, controller.signal),
+          api.getChartSeries<SeriesPoint[]>({ ...baseParams, domain: "consumption" }, controller.signal),
+          api.getChartSeries<SeriesPoint[]>({ ...baseParams, domain: "production" }, controller.signal),
+          api.getChartSeries<SeriesPoint[]>({ ...baseParams, domain: "consumption", category_code: "cons_domestic" }, controller.signal),
+          api.getChartSeries<SeriesPoint[]>({ ...baseParams, domain: "consumption", category_code: "cons_primary" }, controller.signal),
+          api.getChartSeries<SeriesPoint[]>({ ...baseParams, domain: "consumption", category_code: "cons_secondary" }, controller.signal),
+          api.getChartSeries<SeriesPoint[]>({ ...baseParams, domain: "consumption", category_code: "cons_tertiary" }, controller.signal),
+          api.getChartSeries<SeriesPoint[]>({ ...baseParams, domain: "production", base_group: "solar" }, controller.signal),
+          api.getChartSeries<SeriesPoint[]>({ ...baseParams, domain: "production", base_group: "wind" }, controller.signal),
+          api.getChartSeries<SeriesPoint[]>({ ...baseParams, domain: "production", base_group: "hydroelectric" }, controller.signal),
+          api.getChartSeries<SeriesPoint[]>({ ...baseParams, domain: "production", base_group: "geothermal" }, controller.signal),
+          api.getChartSeries<SeriesPoint[]>({ ...baseParams, domain: "production", base_group: "biomass" }, controller.signal),
         ]);
 
         const byMonth = new Map<number, CombinedChartPoint>();

@@ -19,23 +19,47 @@ function buildQuery(params?: Record<string, any>) {
   return s ? `?${s}` : "";
 }
 
-async function getJSON<T>(path: string, opts: GetJSONOptions = {}): Promise<T> {
+// NEW IMPORT
+import { getMockData } from "./mockAdapter";
+
+export async function getJSON<T>(path: string, opts: GetJSONOptions = {}): Promise<T> {
+  // 1. Try Mock
+  const mockParams = opts.params || {};
+  // Extract params from URL if path contains query string (legacy support)
+  // ... (omitted for simplicity, assuming most calls use opts.params)
+  
+  const mock = await getMockData(path, mockParams);
+  if (mock) {
+    // console.log("[API] Served mock for:", path, mockParams);
+    // Simulate network delay for realism
+    await new Promise(r => setTimeout(r, 100 + Math.random() * 200));
+    return mock as T;
+  }
+
+  // 2. Fallback to Real API (likely to fail if backend is off, or return 404 for un-mocked data)
   const urlBase = path.startsWith("http")
     ? path
     : `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
 
   const url = `${urlBase}${buildQuery(opts.params)}`;
 
-  const res = await fetch(url, { signal: opts.signal });
+  try {
+    const res = await fetch(url, { signal: opts.signal });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(
-      `API error ${res.status}${text ? `: ${text.slice(0, 200)}` : ""}`
-    );
+    if (!res.ok) {
+        // If 404/500 and we expected a mock, it's just missing.
+        // For the demo, return empty arrays for series to avoid crashing UI?
+        // But throwing is correct behavior for "Data not available".
+      const text = await res.text().catch(() => "");
+      throw new Error(
+        `API error ${res.status}${text ? `: ${text.slice(0, 200)}` : ""}`
+      );
+    }
+    return res.json() as Promise<T>;
+  } catch (err) {
+      console.warn("[API] Request failed and no mock found:", url);
+      throw err;
   }
-
-  return res.json() as Promise<T>;
 }
 
 // ---- Types for /charts/series

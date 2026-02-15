@@ -1,5 +1,6 @@
 // src/hooks/useDailyData.ts
 import { useEffect, useMemo, useState } from "react";
+import { api } from "../api/client";
 
 export type MonthKey =
   | "jan" | "feb" | "mar" | "apr" | "may" | "jun"
@@ -66,39 +67,7 @@ function codeParamKey(level: BackendLevel): "region_code" | "province_code" | "c
   return "comune_code";
 }
 
-async function fetchTerritorySeries(params: {
-  level: BackendLevel;
-  resolution: "monthly";
-  domain: Domain;
-  year: number;
-  territory_code: number; // normalized input
-  day_type: DayType;
-  signal?: AbortSignal;
-}): Promise<SeriesPoint[]> {
-  const url = new URL(`${API_BASE}/charts/series`);
-  url.searchParams.set("level", params.level);
-  url.searchParams.set("resolution", params.resolution);
-  url.searchParams.set("domain", params.domain);
-  url.searchParams.set("year", String(params.year));
-  url.searchParams.set("day_type", params.day_type);
 
-  // ✅ correct param name per level
-  const key = codeParamKey(params.level);
-  url.searchParams.set(key, String(params.territory_code));
-
-  console.log("[useDailyData] REQUEST:", url.toString());
-
-  const res = await fetch(url.toString(), { signal: params.signal });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(
-      `Failed /charts/series (${params.level}, ${params.domain}, ${params.day_type}) ${res.status} ${text}`
-    );
-  }
-
-  const json = (await res.json()) as SeriesPoint[];
-  return Array.isArray(json) ? json : [];
-}
 
 /**
  * Generic daily hook (weekday/weekend monthly series) for:
@@ -133,25 +102,18 @@ export function useDailyData(
         setDailyLoading(true);
         setDailyError(null);
 
+        const key = codeParamKey(level);
+        const baseParams: Record<string, any> = {
+            level,
+            resolution: "monthly",
+            domain,
+            year,
+        };
+        baseParams[key] = territoryCode!;
+
         const [wkdayPoints, wkendPoints] = await Promise.all([
-          fetchTerritorySeries({
-            level,
-            resolution: "monthly",
-            domain,
-            year,
-            territory_code: territoryCode,
-            day_type: "weekday",
-            signal: controller.signal,
-          }),
-          fetchTerritorySeries({
-            level,
-            resolution: "monthly",
-            domain,
-            year,
-            territory_code: territoryCode,
-            day_type: "weekend",
-            signal: controller.signal,
-          }),
+          api.getChartSeries<SeriesPoint[]>({ ...baseParams, day_type: "weekday" }, controller.signal),
+          api.getChartSeries<SeriesPoint[]>({ ...baseParams, day_type: "weekend" }, controller.signal),
         ]);
 
         setSeries({
