@@ -4,7 +4,7 @@ type Props = {
   setState: React.Dispatch<React.SetStateAction<any>>;
 };
 
-export default function BuildScenarioPanel({ state, setState }: Props) {
+export default function BuildScenarioPanel({ state: _state, setState: _setState }: Props) {
   return (
     <div className="panel">
       <div className="panel-head">

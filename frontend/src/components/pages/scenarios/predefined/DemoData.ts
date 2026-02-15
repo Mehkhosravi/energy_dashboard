@@ -180,7 +180,7 @@ export async function fetchDemoData(
   
   // 1. Prepare Base Structure (Labels)
   const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const mergedMonthly: Record<string, any>[] = monthLabels.map(m => ({ label: m }));
+  const mergedMonthly: ChartData = monthLabels.map(m => ({ label: m }));
   
   // 2. Merge Monthly
   results.forEach(({ filter, monthly }) => {
@@ -198,12 +198,12 @@ export async function fetchDemoData(
   // Assume all files have same x points (0-23)
   const hourlyPoints: number[] = [];
   if (results[0]?.hourly) {
-      results[0].hourly.forEach((d: any) => hourlyPoints.push(d.x ?? parseInt(d.label)));
+      results[0]?.hourly.forEach((d: any) => hourlyPoints.push(d.x ?? parseInt(d.label)));
   } else {
       for(let i=0; i<24; i++) hourlyPoints.push(i);
   }
   
-  const mergedHourly = hourlyPoints.map(h => ({ 
+  const mergedHourly: ChartData = hourlyPoints.map(h => ({ 
       label: String(h).padStart(2, '0') 
   }));
 

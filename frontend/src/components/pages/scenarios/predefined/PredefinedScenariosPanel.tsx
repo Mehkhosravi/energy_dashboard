@@ -18,7 +18,7 @@ type Props = {
     paramKey: string | null;
     selectedScenarioIds: string[];
   };
-  setState: React.Dispatch<React.SetStateAction<any>>;
+  _setState: React.Dispatch<React.SetStateAction<any>>;
   selectedTerritoryName?: string | null;
 };
 
@@ -90,7 +90,8 @@ function groupValues(resp: ScenarioTerritoryResponse | null) {
 
 export default function PredefinedScenariosPanel({
   state,
-  setState,
+  // @ts-ignore
+  _setState,
   selectedTerritoryName,
 }: Props) {
   const [query, setQuery] = useState("");
@@ -156,12 +157,7 @@ export default function PredefinedScenariosPanel({
     });
   }, [batch.byScenarioId]);
 
-  const addScenario = (id: string) => {
-    setState((s: any) => ({
-      ...s,
-      selectedScenarioIds: Array.from(new Set([...(s.selectedScenarioIds ?? []), id])),
-    }));
-  };
+
 
   const topStatus = !canLoad
     ? "Select territory + year"

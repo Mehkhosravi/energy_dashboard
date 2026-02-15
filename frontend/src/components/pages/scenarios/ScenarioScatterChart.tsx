@@ -84,7 +84,7 @@ export default function ScenarioScatterChart({ data, loading }: Props) {
   const yDomain = [Math.max(0, minSSI - 0.05), Math.min(1, maxSSI + 1.25 * (maxSSI - minSSI) * 0.1)].map(v => Number(v.toFixed(2)));
   
   // X Domain: similar logic
-  const xDomain = [Math.max(0, minSCI - 0.05), Math.min(1, maxSCI + 1.25 * (maxSCI - minSCI) * 0.1)].map(v => Number(v.toFixed(2)));
+
 
   // Legend Payload (Unique Groups)
   const uniqueGroups = Array.from(new Set(data.map(d => d.scenarioGroup))).map(group => {
@@ -127,6 +127,7 @@ export default function ScenarioScatterChart({ data, loading }: Props) {
           <Legend 
             verticalAlign="top" 
             height={36}
+            // @ts-ignore
             payload={uniqueGroups.map(g => ({
                 id: g.value,
                 type: "circle",

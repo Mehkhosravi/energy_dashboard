@@ -119,6 +119,13 @@ export function useGeoData({
 
   const geoUrl = useMemo(() => {
     if (!normalizedLevel) return "";
+    
+    // Mock for GitHub Pages
+    if (import.meta.env.VITE_USE_MOCK_GEO === 'true') {
+        const base = import.meta.env.BASE_URL; // e.g. /EnergyPlatform/
+        return `${base}mock_geo/${normalizedLevel}.json`;
+    }
+
     const qs = new URLSearchParams({
       level: normalizedLevel,
       simplify: String(simplifyFor(normalizedLevel)),
@@ -128,6 +135,13 @@ export function useGeoData({
 
   const valuesUrl = useMemo(() => {
     if (!normalizedLevel) return "";
+    
+    // Mock for GitHub Pages
+    if (import.meta.env.VITE_USE_MOCK_GEO === 'true') {
+        const base = import.meta.env.BASE_URL;
+        return `${base}mock_geo/values_${normalizedLevel}.json`;
+    }
+
     const qs = new URLSearchParams({
       level: normalizedLevel,
       resolution,

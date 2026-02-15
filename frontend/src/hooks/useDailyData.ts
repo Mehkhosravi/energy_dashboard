@@ -21,7 +21,6 @@ export const MONTHS: { key: MonthKey; label: string; monthNum: number }[] = [
   { key: "dec", label: "Dec", monthNum: 12 },
 ];
 
-type DayType = "weekday" | "weekend";
 export type Domain = "consumption" | "production";
 
 // ✅ backend level values
@@ -40,8 +39,6 @@ export type TerritoryDailySeries = {
   weekday: number[]; // length 12
   weekend: number[]; // length 12
 };
-
-const API_BASE = "http://localhost:5000";
 
 function empty12(): number[] {
   return Array.from({ length: 12 }, () => 0);

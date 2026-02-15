@@ -96,7 +96,7 @@ export default function ScenariosPage() {
         {tab === "predefined" && (
           <PredefinedScenariosPanel
             state={state}
-            setState={setState}
+            _setState={setState}
             selectedTerritoryName={selectedTerritory?.name ?? null}
           />
         )}
