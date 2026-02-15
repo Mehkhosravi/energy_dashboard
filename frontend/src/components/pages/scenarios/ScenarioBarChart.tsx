@@ -63,7 +63,8 @@ export default function ScenarioBarChart({ data, title, color = "#3b82f6", unit 
             tick={{ fontSize: 10, fill: "#888" }}
             axisLine={false}
             tickLine={false}
-            width={30}
+            width={42}
+            label={{ value: unit, angle: -90, position: 'insideLeft', style: { fontSize: 10, fill: '#999' }, dy: 20 }}
           />
           <Tooltip content={<CustomTooltip unit={unit} />} cursor={{ fill: "rgba(0,0,0,0.05)" }} />
           <Bar dataKey="value" radius={[2, 2, 0, 0]}>

@@ -10,16 +10,13 @@ import {
 } from "recharts";
 
 type Props = {
-  data: {
-    label: string; // e.g. 00, 01...
-    value: number; // primary series
-    value2?: number; // secondary series (e.g. weekend)
+  data: any[];
+  series: {
+    dataKey: string;
+    name: string;
+    color: string;
   }[];
   title?: string;
-  color?: string; // for primary
-  color2?: string; // for secondary
-  seriesName1?: string;
-  seriesName2?: string;
   unit?: string;
 };
 
@@ -36,10 +33,10 @@ const CustomTooltip = ({ active, payload, label, unit }: any) => {
           boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
         }}
       >
-        <div style={{ fontWeight: 700 }}>Hour {label}</div>
+        <div style={{ fontWeight: 700 }}>{label}</div>
         {payload.map((p: any) => (
           <div key={p.name} style={{ color: p.color }}>
-            {p.name}: {p.value.toFixed(1)} {unit}
+            {p.name}: {typeof p.value === 'number' ? p.value.toLocaleString(undefined, { maximumFractionDigits: 1 }) : p.value} {unit}
           </div>
         ))}
       </div>
@@ -50,12 +47,9 @@ const CustomTooltip = ({ active, payload, label, unit }: any) => {
 
 export default function ScenarioLineChart({
   data,
+  series,
   title,
-  color = "#0ea5e9", // sky-500
-  color2 = "#a855f7", // purple-500
-  seriesName1 = "Weekday",
-  seriesName2 = "Weekend",
-  unit = "kWh",
+  unit = "MWh",
 }: Props) {
   return (
     <div style={{ width: "100%", height: 200, marginBottom: 12 }}>
@@ -66,41 +60,38 @@ export default function ScenarioLineChart({
           <XAxis 
             dataKey="label" 
             tick={{ fontSize: 10 }} 
-            interval={3} // show every 4th label (00, 04, 08...)
+            interval="preserveStartEnd"
             axisLine={false} 
             tickLine={false}
           />
           <YAxis
-            tickFormatter={(v: number) => v.toFixed(0)}
+            tickFormatter={(v: number) => 
+               v >= 1000 ? `${(v / 1000).toFixed(0)}k` : Number.isInteger(v) ? v.toFixed(0) : v.toFixed(2)
+            }
             tick={{ fontSize: 10, fill: "#888" }}
             axisLine={false}
             tickLine={false}
-            width={30}
+            width={42}
+            label={{ value: unit, angle: -90, position: 'insideLeft', style: { fontSize: 10, fill: '#999' }, dy: 20 }}
           />
           <Tooltip content={<CustomTooltip unit={unit} />} />
+          {/* Always show legend if there's at least one series?? Or only if multiple? 
+              User said "make the button of it blue when selected... toggle". 
+              The legend helps identify lines. Let's show it. */}
           <Legend iconType="circle" style={{ fontSize: 11 }} wrapperStyle={{ paddingTop: 10 }} />
           
-          <Line
-            type="monotone"
-            dataKey="value"
-            name={seriesName1}
-            stroke={color}
-            strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 4 }}
-          />
-          {data.some(d => d.value2 !== undefined) && (
+          {series.map((s) => (
             <Line
+              key={s.dataKey}
               type="monotone"
-              dataKey="value2"
-              name={seriesName2}
-              stroke={color2}
+              dataKey={s.dataKey}
+              name={s.name}
+              stroke={s.color}
               strokeWidth={2}
-              strokeDasharray="4 4"
               dot={false}
               activeDot={{ r: 4 }}
             />
-          )}
+          ))}
         </LineChart>
       </ResponsiveContainer>
     </div>
