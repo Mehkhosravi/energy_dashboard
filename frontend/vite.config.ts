@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig(({ mode }) => {
   return {
-    base: mode === "production" ? "/EnergyPlatform/" : "/",
+    base: mode === "production" ? "/energy_dashboard/" : "/",
     plugins: [react()],
     build: {
       outDir: "dist", // changed from ../static/dist to standard dist for GH Pages
