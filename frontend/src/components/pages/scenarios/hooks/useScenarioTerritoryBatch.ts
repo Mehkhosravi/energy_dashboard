@@ -38,6 +38,8 @@ function pickTerritoryCodeParam(level: BackendLevel) {
   return "comune_code";
 }
 
+import { getJSON } from "../../../../api/client";
+
 async function getScenarioTerritory(args: {
   level: BackendLevel;
   year: number;
@@ -48,18 +50,14 @@ async function getScenarioTerritory(args: {
 
   const codeParam = pickTerritoryCodeParam(level);
 
-  const url = new URL(API_BASE + "/scenarios/territory");
-  url.searchParams.set("level", level);
-  url.searchParams.set("scenario", scenario);
-  url.searchParams.set("year", String(year));
-  url.searchParams.set(codeParam, String(territoryCode));
-
-  const res = await fetch(url.toString(), { credentials: "include" });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`${res.status} ${text}`.trim());
-  }
-  return (await res.json()) as ScenarioTerritoryResponse;
+  return getJSON<ScenarioTerritoryResponse>("/scenarios/territory", {
+    params: {
+      level,
+      scenario,
+      year,
+      [codeParam]: territoryCode,
+    },
+  });
 }
 
 export type ScenarioTerritoryBatchResult = {

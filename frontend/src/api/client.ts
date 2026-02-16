@@ -37,9 +37,13 @@ export async function getJSON<T>(path: string, opts: GetJSONOptions = {}): Promi
   }
 
   // 2. Fallback to Real API (likely to fail if backend is off, or return 404 for un-mocked data)
+  const baseUrl = import.meta.env.BASE_URL || "/";
+  
   const urlBase = path.startsWith("http")
     ? path
-    : `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
+    : (path.startsWith(baseUrl) && baseUrl !== "/")
+      ? path // Already starts with /energy_dashboard/ etc.
+      : `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
 
   const url = `${urlBase}${buildQuery(opts.params)}`;
 
