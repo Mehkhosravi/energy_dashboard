@@ -157,8 +157,6 @@ export default function PlaceInfo() {
   }
 
   const ratio = data ? (data.productionTotal / data.consumptionTotal) * 100 : 0;
-  // Mocked population (randomized based on code for stability)
-  const population = selectedTerritory.codes.reg ? (123456 + (selectedTerritory.codes.reg * 7891) % 500000) : 0;
 
   return (
     <div className="map-info place-info-expanded">
@@ -170,10 +168,6 @@ export default function PlaceInfo() {
         ) : data ? (
           <div className="place-metrics-box">
             <div className="place-metrics">
-              <div className="metric-row">
-                <span className="metric-label">Population:</span>
-                <span className="metric-value">{population.toLocaleString()}</span>
-              </div>
               <div className="metric-row">
                 <span className="metric-label">Annual consumption:</span>
                 <span className="metric-value">{formatNumber(data.consumptionTotal)} MWh</span>
@@ -202,7 +196,7 @@ export default function PlaceInfo() {
         <div className="place-charts">
           <div className="place-chart-item">
             <h3 className="chart-title">Share of Consumption Sector:</h3>
-            <div style={{ width: "100%", height: 160 }}>
+            <div style={{ width: "100%", height: 220 }}>
               <ResponsiveContainer>
                 <PieChart>
                   <Pie
@@ -220,6 +214,12 @@ export default function PlaceInfo() {
                     formatter={(value: number) => [`${formatNumber(value)} MWh`, 'Value']}
                     contentStyle={{ fontSize: 10 }}
                   />
+                  <Legend 
+                    verticalAlign="bottom" 
+                    height={36} 
+                    iconSize={8}
+                    wrapperStyle={{ fontSize: 10 }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -227,7 +227,7 @@ export default function PlaceInfo() {
 
           <div className="place-chart-item">
             <h3 className="chart-title">Production Type and Percentage</h3>
-            <div style={{ width: "100%", height: 160 }}>
+            <div style={{ width: "100%", height: 220 }}>
               <ResponsiveContainer>
                 <PieChart>
                   <Pie
@@ -244,6 +244,12 @@ export default function PlaceInfo() {
                   <Tooltip 
                     formatter={(value: number) => [`${formatNumber(value)} MWh`, 'Value']}
                     contentStyle={{ fontSize: 10 }}
+                  />
+                  <Legend 
+                    verticalAlign="bottom" 
+                    height={36} 
+                    iconSize={8}
+                    wrapperStyle={{ fontSize: 10 }}
                   />
                 </PieChart>
               </ResponsiveContainer>
