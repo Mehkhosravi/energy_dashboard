@@ -134,6 +134,10 @@ export async function fetchDemoData(
           // For now, let's load the common file, but maybe scale it? 
           // actually, let's stick to the file we know exists:
           hourlyFile = `series_${effectiveLevel}_${effectiveCode}_consumption_hourly_${hourlyMonth}_weekday.json`; 
+      } else if (column === "production") {
+          // Production hourly data matching the generated mocks
+          const sourceSuffix = filter; // "total", "solar", "wind", etc.
+          hourlyFile = `series_${effectiveLevel}_${effectiveCode}_production_hourly_${sourceSuffix}_${hourlyMonth}_weekday.json`;
       }
       
       return { monthly: monthlyFile, hourly: hourlyFile };

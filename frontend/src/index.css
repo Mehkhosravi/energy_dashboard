@@ -229,7 +229,7 @@ body {
 }
 
 /* Make Leaflet map fill this container */
-.map-view > * {
+.map-view>* {
   width: 100%;
   height: 100%;
 }
@@ -237,28 +237,34 @@ body {
 /* Map Legend CSS */
 .info.legend-choropleth {
   background: rgba(255, 255, 255, 0.85);
-  padding: 4px 6px;          /* smaller padding */
+  padding: 4px 6px;
+  /* smaller padding */
   border-radius: 3px;
-  font-size: 10px;           /* smaller text */
-  line-height: 1.1;          /* tighter spacing */
+  font-size: 10px;
+  /* smaller text */
+  line-height: 1.1;
+  /* tighter spacing */
   width: auto;
-  box-shadow: 0 0 4px rgba(0,0,0,0.2);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
 }
 
 .legend-title {
   font-weight: bold;
   margin-bottom: 4px;
-  font-size: 10px;           /* smaller title */
+  font-size: 10px;
+  /* smaller title */
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  margin-bottom: 2px;        /* smaller spacing */
+  margin-bottom: 2px;
+  /* smaller spacing */
 }
 
 .legend-color {
-  width: 12px;               /* smaller box */
+  width: 12px;
+  /* smaller box */
   height: 12px;
   margin-right: 4px;
   border: 1px solid #777;
@@ -267,25 +273,138 @@ body {
 
 /* Right info card */
 .map-info {
-  width: 260px;
-  max-width: 320px;
-  background: #f9fafb;
-  border-radius: 10px;
+  width: 280px;
+  max-width: 340px;
+  background: #ffffff;
+  border-radius: 12px;
   border: 1px solid #e5e7eb;
-  padding: 10px 12px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
   font-size: 13px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.place-info-expanded {
+  height: 100%;
 }
 
 .map-info-header {
-  font-weight: 600;
-  font-size: 13px;
+  font-weight: 700;
+  font-size: 15px;
+  margin: 0 0 8px 0;
+  line-height: 1.2;
 }
 
 .map-info-body {
   color: #4b5563;
+}
+
+/* Metrics styles */
+.place-metrics-box {
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.place-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metric-row {
+  display: flex;
+  gap: 4px;
+}
+
+.metric-label {
+  font-weight: 700;
+  color: #111827;
+  font-size: 13px;
+}
+
+.metric-value {
+  font-weight: 500;
+  font-size: 13px;
+  color: #111827;
+}
+
+.metrics-action,
+.chart-action {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Actions */
+.place-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.btn-full {
+  width: 100%;
+  justify-content: center;
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+.btn-outline {
+  background: white;
+  color: #111827;
+  border: 1px solid #d1d5db;
+}
+
+.btn-outline:hover {
+  background: #f9fafb;
+}
+
+/* Charts in Info Panel */
+.place-charts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+}
+
+.place-chart-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: white;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.chart-title {
+  font-size: 13px;
+  font-weight: 500;
+  margin: 0;
+  text-align: left;
+  color: #111827;
+}
+
+.loading-shimmer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  border-radius: 8px;
+  color: #9ca3af;
+  font-size: 12px;
+  font-style: italic;
 }
 
 /* CHARTS SHELL */
@@ -310,13 +429,14 @@ body {
 
 /* Left side: chart card */
 .chart-card {
-  flex: 2; /* chart wider */
+  flex: 2;
+  /* chart wider */
   display: flex;
   flex-direction: column;
   border: 1px solid #d1d5db;
   border-radius: 10px;
   padding: 8px 10px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   background: #ffffff;
 }
 
@@ -337,11 +457,14 @@ body {
 
 .chart-container {
   width: 100%;
-  height: auto; /* allow height to adjust based on content */
+  height: auto;
+  /* allow height to adjust based on content */
   display: flex;
   flex-direction: column;
-  gap: 24px; /* spacing between stacked charts */
-  padding-bottom: 10px; /* nice breathing room */
+  gap: 24px;
+  /* spacing between stacked charts */
+  padding-bottom: 10px;
+  /* nice breathing room */
 }
 
 /* Right side: insight / text box */
@@ -351,7 +474,7 @@ body {
   border: 1px solid #d1d5db;
   background: #f9fafb;
   padding: 8px 10px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -396,6 +519,20 @@ body {
 
 .btn:hover {
   opacity: 0.9;
+}
+
+/* Blue buttons for PlaceInfo (matching mockup and interactive elements) */
+.btn-blue {
+  background: #0ea5e9;
+  color: white;
+  border: 1px solid #0284c7;
+  border-radius: 8px;
+  /* Slightly less rounded as per mockup */
+}
+
+.btn-blue:hover {
+  background: #0284c7;
+  opacity: 1;
 }
 
 .icon-btn,
@@ -446,7 +583,8 @@ body {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  color: #555; /* adjust text color */
+  color: #555;
+  /* adjust text color */
   font-size: 12px;
   font-weight: 600;
   padding: 0 !important;
@@ -477,28 +615,38 @@ body {
 /* ---------- QGIS TREE (ONLY INNER CONNECTORS, NO OUTER ROOT) ---------- */
 /* Put this block AFTER your .side-section background definition */
 
-:root{
+:root {
 
-   --qgis-parent-drop: 8px;  /* must match the drop height */
+  --qgis-parent-drop: 8px;
+  /* must match the drop height */
   --qgis-spine-top-offset: calc(var(--qgis-row-h) - var(--qgis-parent-attach-y));
 
-  --qgis-bg: #f9fafb;               /* MUST match .side-section background */
-  --qgis-line: rgba(0,0,0,.35);
+  --qgis-bg: #f9fafb;
+  /* MUST match .side-section background */
+  --qgis-line: rgba(0, 0, 0, .35);
 
   --qgis-row-h: 22px;
-  --qgis-elbow-y: 11px;             /* row center (row-h / 2) */
+  --qgis-elbow-y: 11px;
+  /* row center (row-h / 2) */
 
-  --qgis-indent: 18px;              /* children indent under parent */
-  --qgis-gutter: 14px;              /* reserved space for spine+elbows */
+  --qgis-indent: 18px;
+  /* children indent under parent */
+  --qgis-gutter: 14px;
+  /* reserved space for spine+elbows */
 
-  --qgis-toggle-w: 16px;            /* .qgis-toggle / placeholder width */
-  --qgis-gap: 6px;                  /* .qgis-row gap */
+  --qgis-toggle-w: 16px;
+  /* .qgis-toggle / placeholder width */
+  --qgis-gap: 6px;
+  /* .qgis-row gap */
 
-  --qgis-spine-x: 7px;              /* vertical spine x inside the gutter */
-  
-  --qgis-checkbox-h: 14px; /* must match your checkbox size */
+  --qgis-spine-x: 7px;
+  /* vertical spine x inside the gutter */
+
+  --qgis-checkbox-h: 14px;
+  /* must match your checkbox size */
   --qgis-checkbox-top: calc((var(--qgis-row-h) - var(--qgis-checkbox-h)) / 2);
-  --qgis-parent-attach-y: calc(var(--qgis-checkbox-top) + var(--qgis-checkbox-h)); /* bottom of checkbox */
+  --qgis-parent-attach-y: calc(var(--qgis-checkbox-top) + var(--qgis-checkbox-h));
+  /* bottom of checkbox */
 
   /* checkbox LEFT EDGE inside a row = toggle width + gap */
   --qgis-checkbox-left-x: calc(var(--qgis-toggle-w) + var(--qgis-gap));
@@ -513,7 +661,7 @@ body {
 }
 
 /* Tree container */
-.qgis-tree{
+.qgis-tree {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -521,14 +669,14 @@ body {
 }
 
 /* Node wrapper */
-.qgis-node{
+.qgis-node {
   display: flex;
   flex-direction: column;
   position: relative;
 }
 
 /* Row (toggle | checkbox | swatch | label) */
-.qgis-row{
+.qgis-row {
   display: flex;
   align-items: center;
   gap: var(--qgis-gap);
@@ -538,7 +686,7 @@ body {
 }
 
 /* Toggle triangle (LEFT like QGIS) */
-.qgis-toggle{
+.qgis-toggle {
   width: var(--qgis-toggle-w);
   height: var(--qgis-toggle-w);
   border: none;
@@ -553,35 +701,35 @@ body {
 }
 
 /* Placeholder must reserve same space as toggle */
-.qgis-toggle-placeholder{
+.qgis-toggle-placeholder {
   width: var(--qgis-toggle-w);
   height: var(--qgis-toggle-w);
   display: inline-block;
 }
 
 /* Checkbox sizing */
-.qgis-row input[type="checkbox"]{
+.qgis-row input[type="checkbox"] {
   width: var(--qgis-checkbox-h);
   height: var(--qgis-checkbox-h);
 }
 
 
 /* Swatch */
-.qgis-swatch{
+.qgis-swatch {
   width: 12px;
   height: 12px;
-  border: 1px solid rgba(0,0,0,.35);
+  border: 1px solid rgba(0, 0, 0, .35);
   border-radius: 2px;
   display: inline-block;
 }
 
-.qgis-swatch--empty{
+.qgis-swatch--empty {
   background: transparent;
   border-color: transparent;
 }
 
 /* Label */
-.qgis-label{
+.qgis-label {
   user-select: none;
 }
 
@@ -592,18 +740,19 @@ body {
    - Elbow hits checkbox mid-left side visually
 -------------------------- */
 
-.qgis-children{
+.qgis-children {
   margin-left: var(--qgis-indent);
-  padding-left: var(--qgis-gutter);   /* creates the connector gutter */
+  padding-left: var(--qgis-gutter);
+  /* creates the connector gutter */
   display: flex;
   flex-direction: column;
   gap: 6px;
   position: relative;
 }
 
-.qgis-children::before{
-  content:"";
-  position:absolute;
+.qgis-children::before {
+  content: "";
+  position: absolute;
   left: var(--qgis-spine-x);
 
   /* BEFORE */
@@ -615,66 +764,75 @@ body {
   bottom: var(--qgis-elbow-y);
   width: 1px;
   background: var(--qgis-line);
-  pointer-events:none;
+  pointer-events: none;
 }
 
 /* Elbow for each direct child node
    ✅ shifted left by gutter so it meets the spine with NO SPACE */
-.qgis-children > .qgis-node::before{
-  content:"";
-  position:absolute;
-  left: var(--qgis-elbow-left);        /* THIS is the key fix */
+.qgis-children>.qgis-node::before {
+  content: "";
+  position: absolute;
+  left: var(--qgis-elbow-left);
+  /* THIS is the key fix */
   top: var(--qgis-elbow-y);
-  width: var(--qgis-elbow-w);          /* still reaches checkbox */
+  width: var(--qgis-elbow-w);
+  /* still reaches checkbox */
   height: 1px;
   background: var(--qgis-line);
-  pointer-events:none;
+  pointer-events: none;
 }
 
 /* Stop the spine after the last child */
-.qgis-children > .qgis-node.is-last::after{
-  content:"";
-  position:absolute;
-  left: var(--qgis-elbow-left);        /* match elbow left */
+.qgis-children>.qgis-node.is-last::after {
+  content: "";
+  position: absolute;
+  left: var(--qgis-elbow-left);
+  /* match elbow left */
   top: var(--qgis-elbow-y);
   bottom: 0;
   width: 1px;
   background: var(--qgis-bg);
-  pointer-events:none;
+  pointer-events: none;
 }
 
 .qgis-node.has-open-children .qgis-check-anchor::after {
   height: calc(var(--qgis-row-h) / 2 - 2px);
 }
-.qgis-tree > .qgis-node > .qgis-row .qgis-check-anchor {
-  margin-left: -6px; /* tweak: -2px / -4px if needed */
+
+.qgis-tree>.qgis-node>.qgis-row .qgis-check-anchor {
+  margin-left: -6px;
+  /* tweak: -2px / -4px if needed */
 }
 
 /* FIX: stop the children spine from touching/overlapping the parent checkbox */
-.qgis-node.has-open-children > .qgis-children::before{
+.qgis-node.has-open-children>.qgis-children::before {
   top: calc(var(--qgis-elbow-y) - 16px);
 }
+
 /* Shorten horizontal connector (elbow) lines */
-.qgis-children > .qgis-node::before{
-  width: calc(var(--qgis-elbow-w) + 1px); /* try -3px to -6px */
+.qgis-children>.qgis-node::before {
+  width: calc(var(--qgis-elbow-w) + 1px);
+  /* try -3px to -6px */
 }
+
 /* Reduce gap between checkbox and horizontal connector */
-.qgis-children > .qgis-node::before{
+.qgis-children>.qgis-node::before {
   width: calc(var(--qgis-elbow-w) + 3px);
 }
 
-.qgis-icon{
+.qgis-icon {
   width: 14px;
   height: 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px; /* emoji size */
+  font-size: 12px;
+  /* emoji size */
   line-height: 1;
 }
 
 /* Remove spacing when there is no swatch but an icon */
-.qgis-icon + .qgis-swatch--empty {
+.qgis-icon+.qgis-swatch--empty {
   width: 0;
   border: none;
   margin: 0;
@@ -697,7 +855,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  position: relative; /* for tooltip positioning */
+  position: relative;
+  /* for tooltip positioning */
 }
 
 /* Match chart header feel: 13px, 600, normal case */
@@ -738,7 +897,8 @@ body {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
-  transition-delay: 0.9s; /* ~1 second hover before showing */
+  transition-delay: 0.9s;
+  /* ~1 second hover before showing */
 }
 
 /* Small arrow under tooltip (optional) */
@@ -789,7 +949,8 @@ body {
 /* Search bar */
 .map-search {
   flex: 1;
-  position: relative; /* important for dropdown positioning */
+  position: relative;
+  /* important for dropdown positioning */
 }
 
 .search-suggestions {
@@ -862,13 +1023,15 @@ body {
 /* Keep label + select on one line in ImportContextPanel */
 .side-option--inline {
   display: grid;
-  grid-template-columns: 120px 1fr; /* increase if you want more space */
+  grid-template-columns: 120px 1fr;
+  /* increase if you want more space */
   align-items: center;
   column-gap: 12px;
 }
 
 .side-option-label {
-  white-space: nowrap; /* prevents "Spatial level" from wrapping */
+  white-space: nowrap;
+  /* prevents "Spatial level" from wrapping */
 }
 
 
@@ -1019,7 +1182,8 @@ body {
   background: #ffffff;
   font-weight: 600;
   position: relative;
-  top: 1px; /* little lift like a real tab */
+  top: 1px;
+  /* little lift like a real tab */
 }
 
 /* Grid: left rail + main */
@@ -1294,66 +1458,71 @@ body {
   .predef-table {
     overflow-x: auto;
   }
+
   .predef-table .predef-table-head,
   .predef-table .predef-table-row {
     min-width: 760px;
   }
+
   .predef-cards-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
 
 /* chips in the context bar */
-.ctx-pill{
-  display:flex;
-  gap:8px;
-  align-items:baseline;
-  padding:8px 10px;
-  border:1px solid rgba(0,0,0,0.08);
-  border-radius:999px;
-  background:rgba(0,0,0,0.02);
+.ctx-pill {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 8px 10px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.02);
 }
-.ctx-pill-label{
-  font-size:12px;
-  opacity:.65;
+
+.ctx-pill-label {
+  font-size: 12px;
+  opacity: .65;
 }
-.ctx-pill-value{
-  font-weight:700;
+
+.ctx-pill-value {
+  font-weight: 700;
 }
 
 
 
 /* Consumption sequential scale (only shown when a consumption sector is selected) */
-.consumption-seq{
-  margin-left: 34px; /* aligns under checkbox + swatch area; tweak if you want */
+.consumption-seq {
+  margin-left: 34px;
+  /* aligns under checkbox + swatch area; tweak if you want */
   margin-top: 6px;
   padding: 6px 8px;
-  border: 1px dashed rgba(0,0,0,0.12);
+  border: 1px dashed rgba(0, 0, 0, 0.12);
   border-radius: 8px;
-  background: rgba(255,255,255,0.6);
+  background: rgba(255, 255, 255, 0.6);
 }
 
-.consumption-seq-title{
+.consumption-seq-title {
   font-size: 11px;
   font-weight: 600;
   color: #111827;
   margin-bottom: 6px;
 }
 
-.consumption-seq-bar{
+.consumption-seq-bar {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 3px;
   margin-bottom: 4px;
 }
 
-.consumption-seq-step{
+.consumption-seq-step {
   height: 10px;
   border-radius: 3px;
-  border: 1px solid rgba(0,0,0,0.10);
+  border: 1px solid rgba(0, 0, 0, 0.10);
 }
 
-.consumption-seq-hint{
+.consumption-seq-hint {
   font-size: 10px;
   color: #6b7280;
 }
